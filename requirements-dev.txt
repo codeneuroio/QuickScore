@@ -1,0 +1,9 @@
+opencv-contrib-python-headless
+pyqt5
+pandas
+numpy
+pyqtgraph
+black
+isort
+flake8
+pytest
