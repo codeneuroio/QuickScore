@@ -45,6 +45,9 @@ class VideoModel(QObject):
 
     def set_media(self, path):
         self._media_player.setMedia(QMediaContent(QUrl.fromLocalFile(path)))
+        self.set_position(0)
+        self.play()
+        self.pause()
         self.mediaChanged.emit()
 
     def set_video_output(self, video):
@@ -92,13 +95,3 @@ class VideoModel(QObject):
             return frame
         else:
             return None
-
-    def close_video(self):
-        if self.video_object is not None:
-            self.video_object.release()
-        self._media_player.setMedia(QMediaContent())
-        self.video_path = ""
-        self.fps = 0
-        self.video_height = 0
-        self.video_width = 0
-        self.video_n_frames = 0

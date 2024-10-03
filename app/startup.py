@@ -1,12 +1,11 @@
 import sys
-from models import VideoModel, EventModel, TimeSeriesModel
+from models import EventModel, TimeSeriesModel, VideoModel
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QApplication,
     QDesktopWidget,
     QGridLayout,
     QMainWindow,
-    QVBoxLayout,
     QWidget,
 )
 from views import EventView, FileView, PlaybackView, TimeSeriesView, VideoView
@@ -33,7 +32,9 @@ class MainWindow(QMainWindow):
         self.timeseries_model = TimeSeriesModel()
 
         # Views
-        self.file_view = FileView()
+        self.file_view = FileView(
+            self.video_model, self.event_model, self.timeseries_model
+        )
         self.video_view = VideoView(self.video_model)
         self.playback_view = PlaybackView()
         self.event_view = EventView(self.event_model)
@@ -58,13 +59,15 @@ class MainWindow(QMainWindow):
         widget.setLayout(main_layout)
         self.setCentralWidget(widget)
 
-        # Signals
+        # Setup
+        self.video_view.set_max_height(int(self.screen_height * 0.5))
         self.setup_hotkeys()
         self.setup_signals()
 
     def setup_signals(self):
         # File Selection
-        self.file_view.video_path_changed.connect(self.video_model.set_media)
+        # self.file_view.video_path_changed.connect(self.video_model.set_media)
+        pass
 
     def setup_hotkeys(self):
         self.hotkeys = {
@@ -74,6 +77,19 @@ class MainWindow(QMainWindow):
         }
 
     def keyPressEvent(self, event):
+        # TODO remove mock data
+        if event.key() == Qt.Key_1:
+            self.video_model.load_video("/Users/Ryan/Downloads/EPT001_N1_1_intensity_low.mp4")
+            return
+        if event.key() == Qt.Key_2:
+            self.event_model.load_events("/Users/Ryan/Downloads/EPT_events.csv")
+            return
+        if event.key() == Qt.Key_3:
+            self.timeseries_model.load_timeseries("/Users/Ryan/Downloads/EPT_ts.csv")
+            return
+
+        # END TODO
+
         key = event.key()
         if key in self.hotkeys:
             self.hotkeys[key]()

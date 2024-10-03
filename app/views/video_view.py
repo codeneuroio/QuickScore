@@ -1,19 +1,43 @@
-from PyQt5 import QtMultimediaWidgets, QtWidgets
-from PyQt5.QtCore import QPointF, QRectF, QSizeF, Qt, pyqtSignal
-from PyQt5.QtGui import QColor, QPen, QTransform
+from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtMultimediaWidgets import QVideoWidget
+from PyQt5.QtWidgets import QVBoxLayout, QWidget
 
 
-class VideoView(QtWidgets.QGraphicsView):
-    rectangle_changed = pyqtSignal(QRectF)
+class VideoView(QWidget):
+    size_changed = pyqtSignal(int, int)
 
     def __init__(self, video_model, parent=None):
         super().__init__(parent)
         self.video_model = video_model
+        self.max_height = None
 
-        self.setScene(QtWidgets.QGraphicsScene(self))
-        self.videoItem = QtMultimediaWidgets.QGraphicsVideoItem()
-        self.scene().addItem(self.videoItem)
-        self.video_model.set_video_output(self.videoItem)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setAlignment(Qt.AlignCenter)
+        # Components
+        self.video_widget = QVideoWidget(self)
+
+        # Layout
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.video_widget)
+        self.setLayout(layout)
+
+        # Initialize
+        self.video_model.set_video_output(self.video_widget)
+
+        # Connect signals
+        self.video_model.video_loaded.connect(self.resize_video)
+
+    def set_max_height(self, height):
+        self.max_height = height
+
+    def resize_video(self):
+        width = self.video_model.video_width
+        height = self.video_model.video_height
+
+        if self.max_height and height > self.max_height:
+            aspect_ratio = width / height
+            height = self.max_height
+            width = int(height * aspect_ratio)
+
+        self.video_widget.setFixedSize(width, height)
+        self.setFixedSize(width, height)
+        self.size_changed.emit(width, height)

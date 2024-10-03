@@ -16,7 +16,7 @@ class EventView(QWidget):
         self.event_model = event_model
 
         # Components
-        self.event_label = QLabel(f"Event {self.event_model.event_id} of {len(self.event_model.events)}")
+        self.event_label = QLabel()
         self.event_slider = QSlider(QtCore.Qt.Horizontal)
         self.event_slider.setFixedWidth(600)
         self.event_slider.setSingleStep(1)
@@ -29,14 +29,25 @@ class EventView(QWidget):
         self.layout.addWidget(self.event_slider)
 
         # Initial state
-        self.set_event_slider_enabled(True)
+        self.set_event_slider_enabled(False)
+        self.set_event_label(0, 0)
         self.set_event_slider_position()
         self.set_event_slider_range()
 
         # Signals
-        self.event_slider.valueChanged.connect(self.set_event_slider_position)
+        self.event_model.events_loaded.connect(self.on_events_loaded)
+        self.event_slider.valueChanged.connect(self.on_slider_value_changed)
 
-    def set_event_slider_enabled(self, enabled: bool = False):
+    def on_events_loaded(self):
+        self.set_event_label(0, self.event_model.n_events)
+        self.set_event_slider_position(0)
+        self.set_event_slider_range(self.event_model.n_events)
+        self.set_event_slider_enabled(True)
+
+    def set_event_label(self, curr: int = 0, n_events: int = 0):
+        self.event_label.setText(f"Event {curr} of {n_events}")
+
+    def set_event_slider_enabled(self, enabled: bool):
         self.event_slider.setEnabled(enabled)
 
     def set_event_slider_position(self, position: int = 0):
@@ -44,3 +55,7 @@ class EventView(QWidget):
 
     def set_event_slider_range(self, max: int = 20):
         self.event_slider.setRange(0, max)
+
+    def on_slider_value_changed(self, value: int):
+        self.set_event_label(value, self.event_model.n_events)
+        self.event_model.event_id = value
