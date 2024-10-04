@@ -1,19 +1,28 @@
 import os
-from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QFileDialog, QWidget
+from state import VideoState, EventState, TimeSeriesState, PlaybackState
 
 
 class FileView(QWidget):
-    video_selected = pyqtSignal(str)
-    events_selected = pyqtSignal(str)
-    timeseries_selected = pyqtSignal(str)
-
-    def __init__(self, video_model, events_model, timeseries_model):
+    def __init__(self, state_manager):
         super().__init__()
-        self.video_model = video_model
-        self.events_model = events_model
-        self.timeseries_model = timeseries_model
+        self._state_manager = state_manager
         self.default_dir = ""
+        self._files_loaded_notified = False
+
+        # Signals
+        self._state_manager.state_changed.connect(self._on_state_changed)
+
+    def _on_state_changed(self, state):
+        if self._files_loaded_notified:
+            return
+
+        is_video_loaded = state.video.loaded
+        is_events_loaded = state.event.loaded
+        is_timeseries_loaded = state.timeseries.loaded
+        if is_video_loaded and is_events_loaded and is_timeseries_loaded:
+            self._files_loaded_notified = True
+            self._state_manager.update_state(playback=PlaybackState(files_loaded=True))
 
     def select_video(self):
         video_path, _ = QFileDialog.getOpenFileName(
@@ -24,8 +33,7 @@ class FileView(QWidget):
         )
         if video_path:
             self.default_dir = os.path.dirname(video_path)
-            self.video_model.load_video(video_path)
-            self.video_selected.emit(video_path)
+            self._state_manager.update_state(video=VideoState(path=video_path))
         return video_path
 
     def select_events(self):
@@ -33,8 +41,7 @@ class FileView(QWidget):
             self, "Select Events File", self.default_dir, filter="CSV Files (*.csv)"
         )
         if events_path:
-            self.events_model.load_events(events_path)
-            self.events_selected.emit(events_path)
+            self._state_manager.update_state(event=EventState(path=events_path))
         return events_path
 
     def select_timeseries(self):
@@ -42,6 +49,5 @@ class FileView(QWidget):
             self, "Select Timeseries File", self.default_dir, filter="CSV Files (*.csv)"
         )
         if timeseries_path:
-            self.timeseries_model.load_timeseries(timeseries_path)
-            self.timeseries_selected.emit(timeseries_path)
+            self._state_manager.update_state(timeseries=TimeSeriesState(path=timeseries_path))
         return timeseries_path

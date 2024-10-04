@@ -1,54 +1,47 @@
 import cv2
-from PyQt5.QtCore import QObject, QUrl, pyqtSignal
+from PyQt5.QtCore import QObject, QUrl
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
+from state.app_state import VideoState
 
 
 class VideoModel(QObject):
-    durationChanged = pyqtSignal(int)
-    positionChanged = pyqtSignal(int)
-    stateChanged = pyqtSignal(QMediaPlayer.State)
-    mediaChanged = pyqtSignal()
-    video_loaded = pyqtSignal(str)
-
-    def __init__(self):
+    def __init__(self, state_manager):
         super().__init__()
+        self.state_manager = state_manager
         self._media_player = QMediaPlayer()
-        self._media_player.durationChanged.connect(self._on_duration_changed)
-        self._media_player.positionChanged.connect(self._on_position_changed)
-        self._media_player.stateChanged.connect(self.stateChanged)
-
-        self.video_path = ""
         self.video_object = None
-        self.fps = 0
-        self.video_height = 0
-        self.video_width = 0
-        self.video_n_frames = 0
 
-    def _on_duration_changed(self, duration: int):
-        self.durationChanged.emit(duration)
-
-    def _on_position_changed(self, position: int):
-        self.positionChanged.emit(position)
+    @property
+    def video_state(self) -> VideoState:
+        return self.state_manager.get_state().video
 
     def load_video(self, path):
-        self.video_path = path
-        self.set_media(path)
+        try:
+            self.video_object = cv2.VideoCapture(path)
+            width = int(self.video_object.get(cv2.CAP_PROP_FRAME_WIDTH))
+            height = int(self.video_object.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            fps = self.video_object.get(cv2.CAP_PROP_FPS)
+            if not fps.is_integer():
+                raise ArithmeticError("FPS is not an integer.")
+            fps = int(fps)
 
-        # Load video metadata using cv2
-        self.video_object = cv2.VideoCapture(self.video_path)
-        self.fps = self.video_object.get(cv2.CAP_PROP_FPS)
-        self.video_height = int(self.video_object.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        self.video_width = int(self.video_object.get(cv2.CAP_PROP_FRAME_WIDTH))
-        self.video_n_frames = int(self.video_object.get(cv2.CAP_PROP_FRAME_COUNT))
-
-        self.video_loaded.emit(self.video_path)
+            self.set_media(path)
+            self.state_manager.update_state(
+                video=VideoState(
+                    loaded=True, path=path, fps=fps, width=width, height=height
+                )
+            )
+            return True
+        except Exception as e:
+            print(f"Error loading video: {e}")
+            self.state_manager.update_state(video=VideoState(loaded=False))
+            return False
 
     def set_media(self, path):
         self._media_player.setMedia(QMediaContent(QUrl.fromLocalFile(path)))
         self.set_position(0)
         self.play()
         self.pause()
-        self.mediaChanged.emit()
 
     def set_video_output(self, video):
         self._media_player.setVideoOutput(video)
@@ -71,14 +64,14 @@ class VideoModel(QObject):
     def get_duration(self):
         return self._media_player.duration()
 
-    def get_state(self):
+    def get_play_state(self):
         return self._media_player.state()
 
     def get_media_player(self):
         return self._media_player
 
     def toggle_state(self):
-        state = self.get_state()
+        state = self.get_play_state()
         if state == QMediaPlayer.PlayingState:
             self.pause()
         else:
@@ -88,7 +81,7 @@ class VideoModel(QObject):
         if self.video_object is None:
             return None
 
-        frame_number = int(timestamp * self.fps)
+        frame_number = int(timestamp * self.video_state.fps)
         self.video_object.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
         ret, frame = self.video_object.read()
         if ret:

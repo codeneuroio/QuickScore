@@ -1,17 +1,27 @@
 import numpy as np
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject
+from state.app_state import TimeSeriesState
 
 
 class TimeSeriesModel(QObject):
-    timeseries_loaded = pyqtSignal()
-
-    def __init__(self):
+    def __init__(self, state_manager):
         super().__init__()
-        self.timeseries_path = ""
-        self.timeseries = None
+        self.state_manager = state_manager
+
+    @property
+    def timeseries_state(self) -> TimeSeriesState:
+        return self.state_manager.get_state().timeseries
 
     def load_timeseries(self, path):
-        self.timeseries_path = path
-        with open(self.timeseries_path, "r", encoding="utf-8-sig") as f:
-            self.timeseries = np.genfromtxt(f, dtype=float, delimiter=",")
-        self.timeseries_loaded.emit()
+        try:
+            with open(path, "r", encoding="utf-8-sig") as f:
+                data = np.genfromtxt(f, dtype=float, delimiter=",")
+
+            self.state_manager.update_state(
+                timeseries=TimeSeriesState(loaded=True, path=path, data=data)
+            )
+            return True
+        except Exception as e:
+            print(f"Timeseries failed to load: {e}")
+            self.state_manager.update_state(timeseries=TimeSeriesState(loaded=False))
+            return False
