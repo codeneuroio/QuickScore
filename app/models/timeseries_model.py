@@ -1,6 +1,7 @@
 import numpy as np
 from PyQt5.QtCore import QObject
 from state.app_state import TimeSeriesState
+from dataclasses import replace
 
 
 class TimeSeriesModel(QObject):
@@ -23,5 +24,6 @@ class TimeSeriesModel(QObject):
             return True
         except Exception as e:
             print(f"Timeseries failed to load: {e}")
-            self.state_manager.update_state(timeseries=TimeSeriesState(loaded=False))
+            state = replace(self.timeseries_state, loaded=False)
+            self.state_manager.update_state(timeseries=state)
             return False

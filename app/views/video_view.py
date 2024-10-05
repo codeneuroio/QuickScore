@@ -25,15 +25,20 @@ class VideoView(QWidget):
         self._state_manager.state_changed.connect(self._on_state_changed)
 
     @property
-    def state(self) -> VideoState:
+    def video_state(self) -> VideoState:
         return self._state_manager.get_state().video
 
     def _on_state_changed(self, state):
-        if self.state.loaded:
+        if state.video.loaded:
             self._resize_video()
 
+        if state.playback.is_playing:
+            self._video_model.handle_play()
+        else:
+            self._video_model.pause()
+
     def _resize_video(self):
-        width, height = self.state.width, self.state.height
+        width, height = self.video_state.width, self.video_state.height
 
         if self.max_height and height > self.max_height:
             aspect_ratio = width / height

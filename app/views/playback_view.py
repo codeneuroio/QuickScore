@@ -1,8 +1,10 @@
-
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QGridLayout, QPushButton, QWidget
 
 
 class PlaybackView(QWidget):
+    next_button_pressed = pyqtSignal()
+    prev_button_pressed = pyqtSignal()
 
     def __init__(self, state_manager, parent=None):
         super().__init__(parent)
@@ -39,9 +41,16 @@ class PlaybackView(QWidget):
 
         # Signals
         self._state_manager.state_changed.connect(self._on_state_changed)
+        self.next_button.pressed.connect(self.next_button_pressed.emit)
+        self.prev_button.pressed.connect(self.prev_button_pressed.emit)
 
     def _on_state_changed(self, state):
         if state.playback.files_loaded:
+            self.enable_buttons()
+
+        if state.playback.is_playing:
+            self.disable_buttons()
+        else:
             self.enable_buttons()
 
     def enable_buttons(self):

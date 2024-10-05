@@ -2,18 +2,19 @@ import cv2
 from PyQt5.QtCore import QObject, QUrl
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from state.app_state import VideoState
+from dataclasses import replace
 
 
 class VideoModel(QObject):
     def __init__(self, state_manager):
         super().__init__()
-        self.state_manager = state_manager
+        self._state_manager = state_manager
         self._media_player = QMediaPlayer()
         self.video_object = None
 
     @property
     def video_state(self) -> VideoState:
-        return self.state_manager.get_state().video
+        return self._state_manager.get_state().video
 
     def load_video(self, path):
         try:
@@ -26,7 +27,7 @@ class VideoModel(QObject):
             fps = int(fps)
 
             self.set_media(path)
-            self.state_manager.update_state(
+            self._state_manager.update_state(
                 video=VideoState(
                     loaded=True, path=path, fps=fps, width=width, height=height
                 )
@@ -34,7 +35,8 @@ class VideoModel(QObject):
             return True
         except Exception as e:
             print(f"Error loading video: {e}")
-            self.state_manager.update_state(video=VideoState(loaded=False))
+            state = replace(self.video_state, loaded=False)
+            self._state_manager.update_state(video=state)
             return False
 
     def set_media(self, path):
@@ -46,6 +48,12 @@ class VideoModel(QObject):
     def set_video_output(self, video):
         self._media_player.setVideoOutput(video)
 
+    def handle_play(self):
+        current_event = self._state_manager.get_state().event.current_event
+        pos = int(round(1000 * (current_event.time - 0.5)))
+        self.set_position(pos)
+        self.play()
+
     def play(self):
         self._media_player.play()
 
@@ -55,11 +63,11 @@ class VideoModel(QObject):
     def stop(self):
         self._media_player.stop()
 
-    def set_position(self, position):
-        self._media_player.setPosition(position)
-
     def get_position(self):
         return self._media_player.position()
+
+    def set_position(self, position: int):
+        self._media_player.setPosition(position)
 
     def get_duration(self):
         return self._media_player.duration()
@@ -70,21 +78,5 @@ class VideoModel(QObject):
     def get_media_player(self):
         return self._media_player
 
-    def toggle_state(self):
-        state = self.get_play_state()
-        if state == QMediaPlayer.PlayingState:
-            self.pause()
-        else:
-            self.play()
-
-    def get_frame(self, timestamp):
-        if self.video_object is None:
-            return None
-
-        frame_number = int(timestamp * self.video_state.fps)
-        self.video_object.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
-        ret, frame = self.video_object.read()
-        if ret:
-            return frame
-        else:
-            return None
+    def set_playback_rate(self, rate: float):
+        self._media_player.setPlaybackRate(rate)

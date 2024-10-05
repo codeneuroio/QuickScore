@@ -1,10 +1,5 @@
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import (
-    QLabel,
-    QSlider,
-    QVBoxLayout,
-    QWidget,
-)
+from PyQt5.QtWidgets import QLabel, QSlider, QVBoxLayout, QWidget
 from state.app_state import EventState
 
 
@@ -47,12 +42,21 @@ class EventView(QWidget):
         if event_state.loaded:
             self._update_view(event_state)
 
+        if state.playback.is_playing:
+            self.event_slider.setEnabled(False)
+        else:
+            self.event_slider.setEnabled(True)
+
     def _update_view(self, event_state: EventState):
         self.set_event_label(
-            event_state.current_event.idx, len(self._event_model.events)
+            event_state.current_event.idx, self._event_model.n_events - 1
         )
         self.set_event_slider_position(event_state.current_event.idx)
-        self.set_event_slider_range(len(self._event_model.events) - 1)
+        self.set_event_slider_range(self._event_model.n_events - 1)
+
+    def update_view(self):
+        event_state = self._state_manager.get_state().event
+        self._update_view(event_state)
 
     def set_event_label(self, curr: int, n_events: int):
         self.event_label.setText(f"Event {curr} of {n_events}")
@@ -64,7 +68,7 @@ class EventView(QWidget):
         self.event_slider.setRange(0, maximum)
 
     def _on_slider_moved(self, value: int):
-        self.set_event_label(value, len(self._event_model.events))
+        self.set_event_label(value, self._event_model.n_events - 1)
 
     def _on_slider_released(self):
         value = self.event_slider.value()

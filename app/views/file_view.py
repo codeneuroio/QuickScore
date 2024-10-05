@@ -1,6 +1,7 @@
 import os
 from PyQt5.QtWidgets import QFileDialog, QWidget
-from state import VideoState, EventState, TimeSeriesState, PlaybackState
+from state import EventState, PlaybackState, TimeSeriesState, VideoState
+from dataclasses import replace
 
 
 class FileView(QWidget):
@@ -22,7 +23,8 @@ class FileView(QWidget):
         is_timeseries_loaded = state.timeseries.loaded
         if is_video_loaded and is_events_loaded and is_timeseries_loaded:
             self._files_loaded_notified = True
-            self._state_manager.update_state(playback=PlaybackState(files_loaded=True))
+            playback_state = replace(state.playback, files_loaded=True)
+            self._state_manager.update_state(playback=playback_state)
 
     def select_video(self):
         video_path, _ = QFileDialog.getOpenFileName(
@@ -33,7 +35,10 @@ class FileView(QWidget):
         )
         if video_path:
             self.default_dir = os.path.dirname(video_path)
-            self._state_manager.update_state(video=VideoState(path=video_path))
+            video_state = replace(
+                self._state_manager.get_state().video, path=video_path
+            )
+            self._state_manager.update_state(video=video_state)
         return video_path
 
     def select_events(self):
@@ -41,7 +46,10 @@ class FileView(QWidget):
             self, "Select Events File", self.default_dir, filter="CSV Files (*.csv)"
         )
         if events_path:
-            self._state_manager.update_state(event=EventState(path=events_path))
+            event_state = replace(
+                self._state_manager.get_state().event, path=events_path
+            )
+            self._state_manager.update_state(event=event_state)
         return events_path
 
     def select_timeseries(self):
@@ -49,5 +57,8 @@ class FileView(QWidget):
             self, "Select Timeseries File", self.default_dir, filter="CSV Files (*.csv)"
         )
         if timeseries_path:
-            self._state_manager.update_state(timeseries=TimeSeriesState(path=timeseries_path))
+            timeseries_state = replace(
+                self._state_manager.get_state().timeseries, path=timeseries_path
+            )
+            self._state_manager.update_state(timeseries=timeseries_state)
         return timeseries_path

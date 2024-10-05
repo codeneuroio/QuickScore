@@ -17,10 +17,7 @@ class StateManager(QObject):
         for key, value in kwargs.items():
             if hasattr(self._state, key):
                 current_value = getattr(self._state, key)
-                if isinstance(value, dict) and isinstance(current_value, dict):
-                    current_value.update(value)
-                    state_changed = True
-                elif not isinstance(value, dict):
+                if current_value != value:
                     setattr(self._state, key, value)
                     state_changed = True
 

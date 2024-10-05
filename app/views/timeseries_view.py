@@ -1,6 +1,6 @@
 import numpy as np
 import pyqtgraph as pg
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 from PyQt5.QtWidgets import QVBoxLayout, QWidget
 from pyqtgraph import GraphicsLayoutWidget
 from utils.schema import Event
@@ -17,6 +17,10 @@ class TimeSeriesView(QWidget):
         self.timeseries_line = None
         self.vline = None
         self.tmp_vline = None
+        self.sweep_vline = None
+        self.sweep_timer = QTimer()
+        self.sweep_timer.setTimerType(Qt.PreciseTimer)
+        self.refresh_rate = 1.0
 
         # Components
         self.plot_window = GraphicsLayoutWidget()
@@ -39,6 +43,7 @@ class TimeSeriesView(QWidget):
         self.pen_center = pg.mkPen("k", width=1, style=Qt.DashLine)
         self.pen_hover = pg.mkPen("b", width=1, style=Qt.DashLine)
         self.pen_add = pg.mkPen("g", width=1, style=Qt.DashLine)
+        self.pen_sweep = pg.mkPen("r", width=2)
         self.pen_none = pg.mkPen(None)
 
         # Layout
@@ -48,24 +53,28 @@ class TimeSeriesView(QWidget):
         self.setLayout(layout)
 
         # Initialization
-        self.init_vline()
-        # self.init_plot()
+        self.init_vlines()
 
         # Signals
         self._state_manager.state_changed.connect(self._on_state_changed)
         self.vline.sigPositionChangeFinished.connect(self.update_vline)
+        self.sweep_timer.timeout.connect(self.update_sweep_vline)
 
     def _on_state_changed(self, state):
         if state.timeseries.loaded:
-            self.update_plot(state.timeseries.data, state.event.current_event, state.video.fps)
+            self.update_plot(
+                state.timeseries.data, state.event.current_event, state.video.fps
+            )
 
-    def init_plot(self):
-        x = np.linspace(-0.5, 0.5, 30)
-        y = np.zeros(30)
-        self.timeseries_line = self.plot_widget.plot(x, y, pen=self.pen)
-        self.plot_widget.setYRange(-1, 1)
+        if state.playback.is_playing:
+            self.vline.setMovable(False)
+            self.sweep_timer.start(50)
+        else:
+            self.vline.setMovable(True)
+            self.sweep_timer.stop()
+            self.sweep_vline.setPos(-0.5)
 
-    def init_vline(self):
+    def init_vlines(self):
         self.vline = self.plot_widget.addLine(
             x=0,
             y=0,
@@ -74,6 +83,8 @@ class TimeSeriesView(QWidget):
             hoverPen=self.pen_hover,
             bounds=[-0.5, 0.5],
         )
+
+        self.sweep_vline = self.plot_widget.addLine(x=-0.5, y=0, pen=self.pen_sweep, movable=False, bounds=[-0.5, 0.5])
 
     def update_plot(self, data: np.ndarray, event: Event, fps: int):
         if self.timeseries_line:
@@ -87,9 +98,7 @@ class TimeSeriesView(QWidget):
         # Slice data
         y = data[start:stop]
         left_pad = max(0, half_window - event.frame)
-        right_pad = max(
-            0, (event.frame + half_window) - len(data)
-        )
+        right_pad = max(0, (event.frame + half_window) - len(data))
         y = np.pad(y, (left_pad, right_pad), mode="constant", constant_values=np.nan)
         x = np.linspace(-0.5, 0.5, len(y))
 
@@ -115,7 +124,6 @@ class TimeSeriesView(QWidget):
         self.tmp_vline.sigPositionChangeFinished.connect(self.create_event)
 
     def create_event(self):
-        print(self.tmp_vline.x())
         self.tmp_vline_created.emit(self.tmp_vline.x())
         self.destroy_tmp_vline()
 
@@ -125,3 +133,11 @@ class TimeSeriesView(QWidget):
         self.tmp_vline.setPen(self.pen_none)
         self.tmp_vline.setHoverPen(self.pen_none)
         self.tmp_vline.setMovable(False)
+
+    def update_sweep_vline(self):
+        current_position = self.sweep_vline.x()
+        step = 0.05 * self.refresh_rate
+        self.sweep_vline.setPos(current_position + step)
+
+    def set_refresh_rate(self, rate: float):
+        self.refresh_rate = rate

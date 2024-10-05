@@ -1,6 +1,6 @@
 import sys
 from models import EventModel, TimeSeriesModel, VideoModel
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import (
     QApplication,
     QDesktopWidget,
@@ -9,13 +9,15 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 from state import StateManager
-from views import EventView, TimeSeriesView, VideoView, PlaybackView, FileView
+from views import EventView, FileView, PlaybackView, TimeSeriesView, VideoView
+from dataclasses import replace
 
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
         self.screen_width, self.screen_height = 0, 0
+        self.playback_rate = 1.0
         self.hotkeys = {}
 
         # State
@@ -36,7 +38,7 @@ class MainWindow(QMainWindow):
         # Setup
         self.setup_screen()
         self.setup_hotkeys()
-        # self.setup_signals()
+        self.setup_signals()
 
     def setup_screen(self):
         self.setWindowTitle("QuickScore")
@@ -68,43 +70,53 @@ class MainWindow(QMainWindow):
         widget.setLayout(main_layout)
         self.setCentralWidget(widget)
 
-    # def setup_signals(self):
-    #     # Files
-    #     self.file_view.video_selected.connect(self.video_model.load_video)
-    #     self.file_view.events_selected.connect(self.event_model.load_events)
-    #     self.file_view.timeseries_selected.connect(
-    #         self.timeseries_model.load_timeseries
-    #     )
-    #     self.all_files_loaded.connect(self.set_initial_state)
-    #
-    #     # Video
-    #     self.video_model.video_loaded.connect(self.check_files_loaded)
-    #     self.video_model.fps_changed.connect(self.event_model.update_fps)
-    #     self.video_model.fps_changed.connect(self.timeseries_model.update_fps)
-    #
-    #     # Playback
-    #     self.playback_view.next_button_pressed.connect(self.event_model.increment_event)
-    #     self.playback_view.prev_button_pressed.connect(self.event_model.decrement_event)
-    #
-    #     # Events
-    #     self.event_model.events_loaded.connect(self.check_files_loaded)
-    #     self.event_model.event_created.connect(self.event_view.on_events_updated)
-    #     self.event_model.event_updated.connect(self.timeseries_view.update_plot)
-    #
-    #     # TimeSeries
-    #     self.timeseries_model.timeseries_loaded.connect(self.check_files_loaded)
-    #     self.timeseries_view.vline_updated.connect(self.event_model.update_event_time)
-    #     self.timeseries_view.tmp_vline_created.connect(self.event_model.create_event)
+    def setup_signals(self):
+        # Events
+        self.event_model.event_created.connect(self.event_view.update_view)
+
+        # TimeSeries
+        self.timeseries_view.vline_updated.connect(self.event_model.update_event_time)
+        self.timeseries_view.tmp_vline_created.connect(self.event_model.create_event)
+
+        # Playback
+        self.playback_view.next_button_pressed.connect(self.handle_next)
+        self.playback_view.prev_button_pressed.connect(self.event_model.decrement_event)
+
+    def handle_next(self):
+        self.event_model.increment_event()
+        self.start_timer()
 
     def setup_hotkeys(self):
         self.hotkeys = {
             Qt.Key_1: self.file_view.select_video,
             Qt.Key_2: self.file_view.select_events,
             Qt.Key_3: self.file_view.select_timeseries,
-            # Qt.Key_Left: self.playback_view.prev_button_pressed,
-            # Qt.Key_Right: self.playback_view.next_button_pressed,
-            # Qt.Key_Alt: self.timeseries_view.create_tmp_vline,
+            Qt.Key_Left: self.event_model.decrement_event,
+            Qt.Key_Right: self.handle_next,
+            Qt.Key_Alt: self.timeseries_view.create_tmp_vline,
+            Qt.Key_Comma: lambda: self.set_playback_rate(1.0),
+            Qt.Key_Period: lambda: self.set_playback_rate(0.5),
+            Qt.Key_Slash: lambda: self.set_playback_rate(0.25),
         }
+
+    def start_timer(self):
+        msec = int(round(1000 / self.playback_rate))
+        QTimer.singleShot(msec, Qt.PreciseTimer, self.stop_timer)
+        playback_state = replace(
+            self.state_manager.get_state().playback, is_playing=True
+        )
+        self.state_manager.update_state(playback=playback_state)
+
+    def stop_timer(self):
+        playback_state = replace(
+            self.state_manager.get_state().playback, is_playing=False
+        )
+        self.state_manager.update_state(playback=playback_state)
+
+    def set_playback_rate(self, rate: float):
+        self.playback_rate = rate
+        self.video_model.set_playback_rate(self.playback_rate)
+        self.timeseries_view.set_refresh_rate(self.playback_rate)
 
     def keyPressEvent(self, event):
         # TODO remove mock data
@@ -121,15 +133,16 @@ class MainWindow(QMainWindow):
             return
         # END TODO
 
-        key = event.key()
-        if key in self.hotkeys:
-            self.hotkeys[key]()
-        else:
-            super().keyPressEvent(event)
+        if not self.state_manager.get_state().playback.is_playing:
+            key = event.key()
+            if key in self.hotkeys:
+                self.hotkeys[key]()
+            else:
+                super().keyPressEvent(event)
 
-    # def keyReleaseEvent(self, event):
-    #     if event.key() == Qt.Key_Alt:
-    #         self.timeseries_view.destroy_tmp_vline()
+    def keyReleaseEvent(self, event):
+        if event.key() == Qt.Key_Alt:
+            self.timeseries_view.destroy_tmp_vline()
 
 
 if __name__ == "__main__":

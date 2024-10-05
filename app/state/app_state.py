@@ -1,12 +1,14 @@
 from dataclasses import dataclass, field
+from typing import Optional
 import numpy as np
 from utils.schema import Event
-from typing import Optional
 
 
 @dataclass
 class PlaybackState:
     files_loaded: bool = False
+    is_playing: bool = False
+    rate: float = 1.0
 
 
 @dataclass
