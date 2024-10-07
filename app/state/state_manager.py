@@ -1,5 +1,5 @@
 from PyQt5.QtCore import QObject, pyqtSignal
-from state import AppState
+from app.state import AppState
 
 
 class StateManager(QObject):

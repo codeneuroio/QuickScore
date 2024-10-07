@@ -2,7 +2,7 @@ from dataclasses import replace
 import cv2
 from PyQt5.QtCore import QObject, QUrl
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from state.app_state import VideoState
+from app.state.app_state import VideoState
 
 
 class VideoModel(QObject):

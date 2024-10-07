@@ -6,7 +6,7 @@
 Lightning-fast behavioral scoring tool.
 
 ## About
-Scoring behavior is time consuming. Verifying pre-identified behavior is much faster.
+Scoring behavior is time-consuming. Verifying pre-identified behavior is much faster.
 
 This application takes 1) video, 2) event timestamps, and 3) a timeseries. The video is then clipped into 1-s 
 segments for faster scoring.
@@ -40,6 +40,9 @@ Simply move the center line in the timeseries graph to adjust the timing of the 
 ### Create a new event
 If you see an event that is not in your original CSV, but you want to add it to the data, hold down `Alt` and move 
 the center line on the TimeSeries graph to the desired position.
+
+### Save Results
+Saving is performed automatically with every operation.
 
 ### Hotkeys
 

@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Optional
 import numpy as np
-from utils.schema import Event
+from app.utils.schema import Event
 
 
 @dataclass

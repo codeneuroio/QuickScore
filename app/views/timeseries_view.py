@@ -3,8 +3,8 @@ import pyqtgraph as pg
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtWidgets import QVBoxLayout, QWidget
 from pyqtgraph import GraphicsLayoutWidget
-from state import TimeSeriesState
-from utils.schema import Event
+from app.state import TimeSeriesState
+from app.utils.schema import Event
 
 
 class TimeSeriesView(QWidget):

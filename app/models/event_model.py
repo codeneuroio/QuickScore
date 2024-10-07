@@ -4,8 +4,8 @@ from dataclasses import asdict, replace
 from typing import List, Optional
 import numpy as np
 from PyQt5.QtCore import QObject, pyqtSignal
-from state.app_state import EventState
-from utils.schema import Event
+from app.state.app_state import EventState
+from app.utils.schema import Event
 
 
 class EventModel(QObject):

@@ -1,7 +1,7 @@
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtWidgets import QVBoxLayout, QWidget
-from state.app_state import VideoState
+from app.state.app_state import VideoState
 
 
 class VideoView(QWidget):

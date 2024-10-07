@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from state.app_state import EventState
+from app.state.app_state import EventState
 
 
 class EventView(QWidget):

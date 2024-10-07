@@ -2,7 +2,7 @@ import logging
 import sys
 from dataclasses import replace
 from typing import Any, Dict
-from models import EventModel, TimeSeriesModel, VideoModel
+from app.models import EventModel, TimeSeriesModel, VideoModel
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QKeyEvent, QMouseEvent
 from PyQt5.QtWidgets import (
@@ -12,8 +12,8 @@ from PyQt5.QtWidgets import (
     QMainWindow,
     QWidget,
 )
-from state import StateManager
-from views import EventView, FileView, PlaybackView, TimeSeriesView, VideoView
+from app.state import StateManager
+from app.views import EventView, FileView, PlaybackView, TimeSeriesView, VideoView
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
