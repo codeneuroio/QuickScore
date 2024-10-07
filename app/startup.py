@@ -1,6 +1,8 @@
 import sys
+from dataclasses import replace
 from models import EventModel, TimeSeriesModel, VideoModel
 from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QMouseEvent
 from PyQt5.QtWidgets import (
     QApplication,
     QDesktopWidget,
@@ -10,7 +12,6 @@ from PyQt5.QtWidgets import (
 )
 from state import StateManager
 from views import EventView, FileView, PlaybackView, TimeSeriesView, VideoView
-from dataclasses import replace
 
 
 class MainWindow(QMainWindow):
@@ -79,11 +80,26 @@ class MainWindow(QMainWindow):
         self.timeseries_view.tmp_vline_created.connect(self.event_model.create_event)
 
         # Playback
-        self.playback_view.next_button_pressed.connect(self.handle_next)
-        self.playback_view.prev_button_pressed.connect(self.event_model.decrement_event)
+        self.playback_view.next_button.pressed.connect(self.handle_next)
+        self.playback_view.prev_button.pressed.connect(self.handle_prev)
+        self.playback_view.replay_button.pressed.connect(self.start_timer)
+        self.playback_view.discard_button.toggled.connect(
+            self.playback_view.on_discard_button_toggled
+        )
+        self.playback_view.discard_button_toggled.connect(
+            self.event_model.discard_event
+        )
+        self.playback_view.flag_button.toggled.connect(
+            self.playback_view.on_flag_button_toggled
+        )
+        self.playback_view.flag_button_toggled.connect(self.event_model.flag_event)
 
     def handle_next(self):
         self.event_model.increment_event()
+        self.start_timer()
+
+    def handle_prev(self):
+        self.event_model.decrement_event()
         self.start_timer()
 
     def setup_hotkeys(self):
@@ -91,21 +107,27 @@ class MainWindow(QMainWindow):
             Qt.Key_1: self.file_view.select_video,
             Qt.Key_2: self.file_view.select_events,
             Qt.Key_3: self.file_view.select_timeseries,
-            Qt.Key_Left: self.event_model.decrement_event,
+            Qt.Key_Left: self.handle_prev,
             Qt.Key_Right: self.handle_next,
             Qt.Key_Alt: self.timeseries_view.create_tmp_vline,
             Qt.Key_Comma: lambda: self.set_playback_rate(1.0),
             Qt.Key_Period: lambda: self.set_playback_rate(0.5),
             Qt.Key_Slash: lambda: self.set_playback_rate(0.25),
+            Qt.Key_Space: self.start_timer,
+            Qt.Key_F: self.event_model.flag_event,
+            Qt.Key_D: self.event_model.discard_event,
+            Qt.Key_S: self.event_model.save_events_to_csv,
         }
 
     def start_timer(self):
-        msec = int(round(1000 / self.playback_rate))
-        QTimer.singleShot(msec, Qt.PreciseTimer, self.stop_timer)
-        playback_state = replace(
-            self.state_manager.get_state().playback, is_playing=True
-        )
-        self.state_manager.update_state(playback=playback_state)
+        is_discarded = self.state_manager.get_state().event.current_event.is_discarded
+        if not is_discarded:
+            msec = int(round(1000 / self.playback_rate))
+            QTimer.singleShot(msec, Qt.PreciseTimer, self.stop_timer)
+            playback_state = replace(
+                self.state_manager.get_state().playback, is_playing=True
+            )
+            self.state_manager.update_state(playback=playback_state)
 
     def stop_timer(self):
         playback_state = replace(
@@ -143,6 +165,11 @@ class MainWindow(QMainWindow):
     def keyReleaseEvent(self, event):
         if event.key() == Qt.Key_Alt:
             self.timeseries_view.destroy_tmp_vline()
+
+    def mousePressEvent(self, event: QMouseEvent):
+        # Right click
+        if event.button() == 2:
+            self.handle_next()
 
 
 if __name__ == "__main__":

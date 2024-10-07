@@ -1,5 +1,7 @@
-from dataclasses import replace
-from typing import List
+import csv
+import os
+from dataclasses import asdict, replace
+from typing import List, Optional
 import numpy as np
 from PyQt5.QtCore import QObject, pyqtSignal
 from state.app_state import EventState
@@ -44,6 +46,7 @@ class EventModel(QObject):
     def _update_event_state(self, event: Event):
         updated_state = replace(self.event_state, current_event=event)
         self._state_manager.update_state(event=updated_state)
+        self.save_events_to_csv()
 
     def set_current_event(self, idx: int):
         next_event = self.events[idx]
@@ -89,6 +92,8 @@ class EventModel(QObject):
         if time < 0:
             updated_event = replace(current_event, idx=new_index)
             self._update_event_state(updated_event)
+        else:
+            self.save_events_to_csv()
 
         self.event_created.emit()
 
@@ -104,3 +109,79 @@ class EventModel(QObject):
             self._update_event_state(updated_event)
         else:
             print("Cannot move an event before time zero.")
+
+    def flag_event(self):
+        current_event = self.event_state.current_event
+        updated_event = replace(
+            current_event, is_flagged=(not current_event.is_flagged)
+        )
+        self.events[updated_event.idx] = updated_event
+        self._update_event_state(updated_event)
+
+    def discard_event(self):
+        current_event = self.event_state.current_event
+        updated_event = replace(
+            current_event, is_discarded=(not current_event.is_discarded)
+        )
+        self.events[updated_event.idx] = updated_event
+        self._update_event_state(updated_event)
+
+    def get_output_path(self):
+        video_path = self._state_manager.get_state().video.path
+        return os.path.splitext(video_path)[0] + "_qs.csv"
+
+    def save_events_to_csv(self) -> None:
+        print("Saved!")
+        output_path = self.get_output_path()
+        with open(output_path, "w", newline="") as csvfile:
+            fieldnames = [
+                "id",
+                "time",
+                "original_time",
+                "is_flagged",
+                "is_discarded",
+                "is_current",
+            ]
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+
+            current_event = self.event_state.current_event
+            for event in self.events:
+                event_dict = asdict(event)
+                event_dict["is_current"] = event.idx == current_event.idx
+                event_dict["id"] = event_dict.pop("idx")
+
+                # Remove any keys not in fieldnames
+                event_dict = {k: v for k, v in event_dict.items() if k in fieldnames}
+
+                writer.writerow(event_dict)
+
+    def load_events_from_csv(self):
+        file_path = self.get_output_path()
+        with open(file_path, "r", newline="") as csvfile:
+            reader = csv.DictReader(csvfile)
+            new_events: List[Event] = []
+            current_event_idx: Optional[int] = None
+            fps = self._state_manager.get_state().video.fps
+
+            for row in reader:
+                event = Event(
+                    idx=int(row["id"]),
+                    time=float(row["time"]),
+                    frame=int(round(float(row["time"]) * fps)),
+                    original_time=float(row["original_time"]),
+                    is_flagged=row["is_flagged"].lower() == "true",
+                    is_discarded=row["is_discarded"].lower() == "true",
+                )
+                new_events.append(event)
+
+                if row["is_current"].lower() == "true":
+                    current_event_idx = event.idx
+
+        self.events = new_events
+        if current_event_idx is not None:
+            self.set_current_event(current_event_idx)
+        elif new_events:
+            self._update_event_state(new_events[0])
+
+        print("Loaded!")

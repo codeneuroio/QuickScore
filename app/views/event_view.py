@@ -1,5 +1,13 @@
+import os
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QLabel, QSlider, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import (
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QSlider,
+    QVBoxLayout,
+    QWidget,
+)
 from state.app_state import EventState
 
 
@@ -8,6 +16,7 @@ class EventView(QWidget):
         super().__init__(parent)
         self._state_manager = state_manager
         self._event_model = event_model
+        self._events_loaded_notified = False
 
         # Components
         self.event_label = QLabel()
@@ -18,6 +27,14 @@ class EventView(QWidget):
         self.event_slider.setTickInterval(1)
         self.event_slider.setTickPosition(QSlider.TicksBelow)
         self.event_slider.setEnabled(False)
+
+        self.load_dialog = QMessageBox()
+        self.load_dialog.setText("An existing output file was found. Continue scoring?")
+        self.continue_button = QPushButton("Continue")
+        self.overwrite_button = QPushButton("Overwrite file")
+        self.load_dialog.addButton(self.continue_button, QMessageBox.YesRole)
+        self.load_dialog.addButton(self.overwrite_button, QMessageBox.NoRole)
+        self.load_dialog.setDefaultButton(self.continue_button)
 
         # Layout
         layout = QVBoxLayout()
@@ -38,9 +55,12 @@ class EventView(QWidget):
         if state.playback.files_loaded:
             self.event_slider.setEnabled(True)
 
-        event_state = state.event
-        if event_state.loaded:
-            self._update_view(event_state)
+        if state.event.loaded:
+            self._update_view(state.event)
+
+            if not self._events_loaded_notified:
+                self._events_loaded_notified = True
+                self._load_dialog()
 
         if state.playback.is_playing:
             self.event_slider.setEnabled(False)
@@ -73,3 +93,11 @@ class EventView(QWidget):
     def _on_slider_released(self):
         value = self.event_slider.value()
         self._event_model.set_current_event(value)
+
+    def _load_dialog(self):
+        output_path = self._event_model.get_output_path()
+        if os.path.isfile(output_path):
+            response = self.load_dialog.exec_()
+
+            if response == 0:
+                self._event_model.load_events_from_csv()

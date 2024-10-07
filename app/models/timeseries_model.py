@@ -1,7 +1,7 @@
+from dataclasses import replace
 import numpy as np
 from PyQt5.QtCore import QObject
 from state.app_state import TimeSeriesState
-from dataclasses import replace
 
 
 class TimeSeriesModel(QObject):

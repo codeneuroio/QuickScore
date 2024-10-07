@@ -3,12 +3,14 @@ from PyQt5.QtWidgets import QGridLayout, QPushButton, QWidget
 
 
 class PlaybackView(QWidget):
-    next_button_pressed = pyqtSignal()
-    prev_button_pressed = pyqtSignal()
+    discard_button_toggled = pyqtSignal(bool)
+    flag_button_toggled = pyqtSignal(bool)
 
     def __init__(self, state_manager, parent=None):
         super().__init__(parent)
         self._state_manager = state_manager
+        self._updating_discard_button_state = False
+        self._updating_flag_button_state = False
 
         # Components
         self.next_button = QPushButton("Next")
@@ -20,7 +22,6 @@ class PlaybackView(QWidget):
             self.next_button,
             self.prev_button,
             self.replay_button,
-            self.discard_button,
             self.discard_button,
             self.flag_button,
         ]
@@ -35,26 +36,49 @@ class PlaybackView(QWidget):
         self.setLayout(layout)
 
         # Initialize
-        self.disable_buttons()
         self.discard_button.setCheckable(True)
         self.flag_button.setCheckable(True)
+        self.disable_buttons()
 
         # Signals
         self._state_manager.state_changed.connect(self._on_state_changed)
-        self.next_button.pressed.connect(self.next_button_pressed.emit)
-        self.prev_button.pressed.connect(self.prev_button_pressed.emit)
 
     def _on_state_changed(self, state):
         if state.playback.files_loaded:
             self.enable_buttons()
+            if state.event.current_event and state.event.current_event.is_discarded:
+                self.disable_buttons()
+
+            self.update_discard_button_state(state.event.current_event.is_discarded)
+            self.update_flag_button_state(state.event.current_event.is_flagged)
 
         if state.playback.is_playing:
             self.disable_buttons()
-        else:
-            self.enable_buttons()
 
     def enable_buttons(self):
-        [button.setEnabled(True) for button in self.buttons]
+        for button in self.buttons:
+            button.setEnabled(True)
 
     def disable_buttons(self):
-        [button.setEnabled(False) for button in self.buttons]
+        for button in self.buttons:
+            button.setEnabled(False)
+
+    def update_discard_button_state(self, is_discarded: bool):
+        self._updating_discard_button_state = True
+        self.discard_button.setChecked(is_discarded)
+        if is_discarded:
+            self.discard_button.setEnabled(True)
+        self._updating_discard_button_state = False
+
+    def on_discard_button_toggled(self, checked):
+        if not self._updating_discard_button_state:
+            self.discard_button_toggled.emit(checked)
+
+    def update_flag_button_state(self, is_flagged: bool):
+        self._updating_flag_button_state = True
+        self.flag_button.setChecked(is_flagged)
+        self._updating_flag_button_state = False
+
+    def on_flag_button_toggled(self, checked):
+        if not self._updating_flag_button_state:
+            self.flag_button_toggled.emit(checked)

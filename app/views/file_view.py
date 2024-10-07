@@ -1,7 +1,7 @@
 import os
+from dataclasses import replace
 from PyQt5.QtWidgets import QFileDialog, QWidget
 from state import EventState, PlaybackState, TimeSeriesState, VideoState
-from dataclasses import replace
 
 
 class FileView(QWidget):

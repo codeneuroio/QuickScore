@@ -7,5 +7,5 @@ class Event:
     frame: int
     time: float
     original_time: float
-    deleted: bool = False
-    flagged: bool = False
+    is_discarded: bool = False
+    is_flagged: bool = False
