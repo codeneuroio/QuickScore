@@ -1,3 +1,7 @@
+[project]
+name = "QuickScore"
+requires-python = ">= 3.8"
+
 [tool.isort]
 profile = "black"
 skip = [".venv"]

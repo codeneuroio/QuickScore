@@ -53,8 +53,8 @@ class EventView(QWidget):
         return self._state_manager.get_state().event
 
     def _on_state_changed(self, state):
-        if self.event_state.path and not self._events_loaded_notified:
-            self._events_loaded_notified = True
+        if self.event_state.path and not self._events_selected_notified:
+            self._events_selected_notified = True
             self._event_model.load_events()
 
         if state.playback.files_loaded:

@@ -1,8 +1,10 @@
+import logging
 import sys
 from dataclasses import replace
+from typing import Any, Dict
 from models import EventModel, TimeSeriesModel, VideoModel
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QMouseEvent
+from PyQt5.QtGui import QKeyEvent, QMouseEvent
 from PyQt5.QtWidgets import (
     QApplication,
     QDesktopWidget,
@@ -13,15 +15,35 @@ from PyQt5.QtWidgets import (
 from state import StateManager
 from views import EventView, FileView, PlaybackView, TimeSeriesView, VideoView
 
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
 
 class MainWindow(QMainWindow):
-    def __init__(self, parent=None):
-        super(MainWindow, self).__init__(parent)
-        self.screen_width, self.screen_height = 0, 0
-        self.playback_rate = 1.0
-        self.hotkeys = {}
+    WINDOW_WIDTH_RATIO = 0.50
+    WINDOW_HEIGHT_RATIO = 0.67
+    WINDOW_X_RATIO = 0.25
+    WINDOW_Y_RATIO = 0.16
+    VIDEO_MAX_HEIGHT_RATIO = 0.5
 
-        # State
+    def __init__(self, parent: QWidget = None) -> None:
+        super(MainWindow, self).__init__(parent)
+        logging.info("Initializing MainWindow")
+
+        self.screen_width, self.screen_height = self._get_screen_dimensions()
+        self.playback_rate: float = 1.0
+        self.hotkeys: Dict[int, Any] = {}
+
+        self._initialize_components()
+        self._setup_ui()
+        self._setup_signals()
+        self._setup_hotkeys()
+
+        logging.info("MainWindow initialization complete")
+
+    def _initialize_components(self) -> None:
+        logging.info("Initializing components")
         self.state_manager = StateManager()
 
         # Models
@@ -36,25 +58,28 @@ class MainWindow(QMainWindow):
         self.timeseries_view = TimeSeriesView(self.state_manager, self.timeseries_model)
         self.playback_view = PlaybackView(self.state_manager)
 
-        # Setup
-        self.setup_screen()
-        self.setup_hotkeys()
-        self.setup_signals()
-
-    def setup_screen(self):
+    def _setup_ui(self) -> None:
+        logging.info("Setting up UI")
         self.setWindowTitle("QuickScore")
-        _, _, self.screen_width, self.screen_height = (
-            QDesktopWidget().screenGeometry(-1).getRect()
-        )
-        self.setGeometry(
-            int(0.25 * self.screen_width),
-            int(0.16 * self.screen_height),
-            int(0.50 * self.screen_width),
-            int(0.67 * self.screen_height),
-        )
-        self.video_view.set_max_height(int(self.screen_height * 0.5))
+        self._set_window_geometry()
+        self._setup_layout()
 
-        # Layout
+    @staticmethod
+    def _get_screen_dimensions() -> tuple[int, int]:
+        screen = QDesktopWidget().screenGeometry(-1)
+        return screen.width(), screen.height()
+
+    def _set_window_geometry(self) -> None:
+        width = int(self.WINDOW_WIDTH_RATIO * self.screen_width)
+        height = int(self.WINDOW_HEIGHT_RATIO * self.screen_height)
+        x = int(self.WINDOW_X_RATIO * self.screen_width)
+        y = int(self.WINDOW_Y_RATIO * self.screen_height)
+        self.setGeometry(x, y, width, height)
+
+        max_video_height = int(self.VIDEO_MAX_HEIGHT_RATIO * self.screen_height)
+        self.video_view.set_max_height(max_video_height)
+
+    def _setup_layout(self) -> None:
         main_layout = QGridLayout()
         main_layout.addWidget(self.video_view, 0, 0, 8, 9, alignment=Qt.AlignCenter)
         main_layout.addWidget(
@@ -62,16 +87,19 @@ class MainWindow(QMainWindow):
         )
         main_layout.addWidget(self.event_view, 9, 0, 1, 9, alignment=Qt.AlignCenter)
         main_layout.addWidget(self.playback_view, 11, 1, 1, 7)
+
         main_layout.setRowStretch(0, 10)
         main_layout.setRowStretch(7, 2)
         main_layout.setRowStretch(9, 1)
         main_layout.setRowStretch(11, 1)
 
-        widget = QWidget(self)
-        widget.setLayout(main_layout)
-        self.setCentralWidget(widget)
+        central_widget = QWidget(self)
+        central_widget.setLayout(main_layout)
+        self.setCentralWidget(central_widget)
 
-    def setup_signals(self):
+    def _setup_signals(self) -> None:
+        logging.info("Setting up signals")
+
         # Video
         self.video_view.video_resized.connect(self.resize_window)
 
@@ -98,25 +126,22 @@ class MainWindow(QMainWindow):
         self.playback_view.flag_button_toggled.connect(self.event_model.flag_event)
 
     def resize_window(self, width: int) -> None:
-        new_width = width
-
-        self.resize(new_width, -1)
+        logging.info(f"Resizing window to width: {width}")
+        new_x = int(0.5 * self.screen_width - 0.5 * width)
+        new_height = int(self.WINDOW_HEIGHT_RATIO * self.screen_height)
         self.setGeometry(
-            int(0.5 * self.screen_width - 0.5 * new_width),
-            int(0.16 * self.screen_height),
-            int(new_width),
-            int(0.67 * self.screen_height),
+            new_x, int(self.WINDOW_Y_RATIO * self.screen_height), width, new_height
         )
 
-    def handle_next(self):
+    def handle_next(self) -> None:
         self.event_model.increment_event()
         self.start_timer()
 
-    def handle_prev(self):
+    def handle_prev(self) -> None:
         self.event_model.decrement_event()
         self.start_timer()
 
-    def setup_hotkeys(self):
+    def _setup_hotkeys(self) -> None:
         self.hotkeys = {
             Qt.Key_1: self.file_view.select_video,
             Qt.Key_2: self.file_view.select_events,
@@ -132,9 +157,8 @@ class MainWindow(QMainWindow):
             Qt.Key_D: self.event_model.discard_event,
         }
 
-    def start_timer(self):
-        is_discarded = self.state_manager.get_state().event.current_event.is_discarded
-        if not is_discarded:
+    def start_timer(self) -> None:
+        if not self.state_manager.get_state().event.current_event.is_discarded:
             msec = int(round(1000 / self.playback_rate))
             QTimer.singleShot(msec, Qt.PreciseTimer, self.stop_timer)
             playback_state = replace(
@@ -142,19 +166,19 @@ class MainWindow(QMainWindow):
             )
             self.state_manager.update_state(playback=playback_state)
 
-    def stop_timer(self):
+    def stop_timer(self) -> None:
         playback_state = replace(
             self.state_manager.get_state().playback, is_playing=False
         )
         self.state_manager.update_state(playback=playback_state)
 
-    def set_playback_rate(self, rate: float):
+    def set_playback_rate(self, rate: float) -> None:
         self.playback_rate = rate
         self.video_model.set_playback_rate(self.playback_rate)
         self.timeseries_view.set_refresh_rate(self.playback_rate)
         self.playback_view.set_playback_rate(self.playback_rate)
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event: QKeyEvent) -> None:
         if not self.state_manager.get_state().playback.is_playing:
             key = event.key()
             if key in self.hotkeys:
@@ -162,13 +186,12 @@ class MainWindow(QMainWindow):
             else:
                 super().keyPressEvent(event)
 
-    def keyReleaseEvent(self, event):
+    def keyReleaseEvent(self, event: QKeyEvent) -> None:
         if event.key() == Qt.Key_Alt:
             self.timeseries_view.destroy_tmp_vline()
 
-    def mousePressEvent(self, event: QMouseEvent):
-        # Right click
-        if event.button() == 2:
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        if event.button() == Qt.RightButton:
             self.handle_next()
 
 
