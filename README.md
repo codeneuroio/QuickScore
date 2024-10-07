@@ -18,11 +18,23 @@ This application took my behavioral scoring from several hours to ~20 minutes pe
 ## Installation
 
 1. Clone the repo
-2. Install dependencies
+2. (Recommended) Create a virtual environment
+
+   `python -m venv .venv`
+
+3. Install dependencies
     
     `pip install -r requirements.txt`
 
 ## Use
+
+(If you installed the dependencies in a virtual environment):
+
+   ```
+   source .venv/bin/activate  # macOS
+   
+   . .\.venv\Scripts\activate  # Windows
+   ```
 
 Launch the app:
     
