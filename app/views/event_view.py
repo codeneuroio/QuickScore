@@ -55,17 +55,17 @@ class EventView(QWidget):
         if state.playback.files_loaded:
             self.event_slider.setEnabled(True)
 
+            if state.playback.is_playing:
+                self.event_slider.setEnabled(False)
+            else:
+                self.event_slider.setEnabled(True)
+
         if state.event.loaded:
             self._update_view(state.event)
 
             if not self._events_loaded_notified:
                 self._events_loaded_notified = True
                 self._load_dialog()
-
-        if state.playback.is_playing:
-            self.event_slider.setEnabled(False)
-        else:
-            self.event_slider.setEnabled(True)
 
     def _update_view(self, event_state: EventState):
         self.set_event_label(

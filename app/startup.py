@@ -72,6 +72,9 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(widget)
 
     def setup_signals(self):
+        # Video
+        self.video_view.video_resized.connect(self.resize_window)
+
         # Events
         self.event_model.event_created.connect(self.event_view.update_view)
 
@@ -82,7 +85,7 @@ class MainWindow(QMainWindow):
         # Playback
         self.playback_view.next_button.pressed.connect(self.handle_next)
         self.playback_view.prev_button.pressed.connect(self.handle_prev)
-        self.playback_view.replay_button.pressed.connect(self.start_timer)
+        self.playback_view.play_button.pressed.connect(self.start_timer)
         self.playback_view.discard_button.toggled.connect(
             self.playback_view.on_discard_button_toggled
         )
@@ -93,6 +96,17 @@ class MainWindow(QMainWindow):
             self.playback_view.on_flag_button_toggled
         )
         self.playback_view.flag_button_toggled.connect(self.event_model.flag_event)
+
+    def resize_window(self, width: int) -> None:
+        new_width = width
+
+        self.resize(new_width, -1)
+        self.setGeometry(
+            int(0.5 * self.screen_width - 0.5 * new_width),
+            int(0.16 * self.screen_height),
+            int(new_width),
+            int(0.67 * self.screen_height),
+        )
 
     def handle_next(self):
         self.event_model.increment_event()
@@ -139,6 +153,7 @@ class MainWindow(QMainWindow):
         self.playback_rate = rate
         self.video_model.set_playback_rate(self.playback_rate)
         self.timeseries_view.set_refresh_rate(self.playback_rate)
+        self.playback_view.set_playback_rate(self.playback_rate)
 
     def keyPressEvent(self, event):
         # TODO remove mock data

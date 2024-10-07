@@ -1,3 +1,4 @@
+import math
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QGridLayout, QPushButton, QWidget
 
@@ -11,17 +12,18 @@ class PlaybackView(QWidget):
         self._state_manager = state_manager
         self._updating_discard_button_state = False
         self._updating_flag_button_state = False
+        self.playback_rate = 1
 
         # Components
         self.next_button = QPushButton("Next")
         self.prev_button = QPushButton("Prev")
-        self.replay_button = QPushButton("Play")
+        self.play_button = QPushButton("Play")
         self.discard_button = QPushButton("Discard Event")
         self.flag_button = QPushButton("Flag Event")
         self.buttons = [
             self.next_button,
             self.prev_button,
-            self.replay_button,
+            self.play_button,
             self.discard_button,
             self.flag_button,
         ]
@@ -29,7 +31,7 @@ class PlaybackView(QWidget):
         # Layout
         layout = QGridLayout()
         layout.addWidget(self.prev_button, 0, 0, 1, 3)
-        layout.addWidget(self.replay_button, 0, 3, 1, 3)
+        layout.addWidget(self.play_button, 0, 3, 1, 3)
         layout.addWidget(self.next_button, 0, 6, 1, 3)
         layout.addWidget(self.discard_button, 1, 6, 1, 3)
         layout.addWidget(self.flag_button, 1, 0, 1, 3)
@@ -52,8 +54,8 @@ class PlaybackView(QWidget):
             self.update_discard_button_state(state.event.current_event.is_discarded)
             self.update_flag_button_state(state.event.current_event.is_flagged)
 
-        if state.playback.is_playing:
-            self.disable_buttons()
+            if state.playback.is_playing:
+                self.disable_buttons()
 
     def enable_buttons(self):
         for button in self.buttons:
@@ -82,3 +84,11 @@ class PlaybackView(QWidget):
     def on_flag_button_toggled(self, checked):
         if not self._updating_flag_button_state:
             self.flag_button_toggled.emit(checked)
+
+    def set_playback_rate(self, rate: float):
+        if not math.isclose(rate, 1.0):
+            self.play_button.setText(f"Play ({round(rate, 2)}x)")
+        else:
+            self.play_button.setText("Play")
+
+        self.playback_rate = rate

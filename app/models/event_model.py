@@ -131,7 +131,6 @@ class EventModel(QObject):
         return os.path.splitext(video_path)[0] + "_qs.csv"
 
     def save_events_to_csv(self) -> None:
-        print("Saved!")
         output_path = self.get_output_path()
         with open(output_path, "w", newline="") as csvfile:
             fieldnames = [
@@ -183,5 +182,3 @@ class EventModel(QObject):
             self.set_current_event(current_event_idx)
         elif new_events:
             self._update_event_state(new_events[0])
-
-        print("Loaded!")

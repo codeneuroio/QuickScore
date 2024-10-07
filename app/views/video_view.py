@@ -1,9 +1,11 @@
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtWidgets import QVBoxLayout, QWidget
 from state.app_state import VideoState
 
 
 class VideoView(QWidget):
+    video_resized = pyqtSignal(int)
 
     def __init__(self, state_manager, video_model, parent=None):
         super().__init__(parent)
@@ -47,6 +49,7 @@ class VideoView(QWidget):
 
         self.video_widget.setFixedSize(width, height)
         self.setFixedSize(width, height)
+        self.video_resized.emit(width)
 
     def set_max_height(self, height):
         self.max_height = height
