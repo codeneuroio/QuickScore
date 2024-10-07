@@ -127,6 +127,14 @@ class EventModel(QObject):
         self.events[updated_event.idx] = updated_event
         self._update_event_state(updated_event)
 
+    def label_event(self, label: str):
+        current_event = self.event_state.current_event
+        updated_event = replace(
+            current_event, label=label
+        )
+        self.events[updated_event.idx] = updated_event
+        self._update_event_state(updated_event)
+
     def get_output_path(self):
         video_path = self._state_manager.get_state().video.path
         return os.path.splitext(video_path)[0] + "_qs.csv"
@@ -138,6 +146,7 @@ class EventModel(QObject):
                 "id",
                 "time",
                 "original_time",
+                "label",
                 "is_flagged",
                 "is_discarded",
                 "is_current",
@@ -170,6 +179,7 @@ class EventModel(QObject):
                     time=float(row["time"]),
                     frame=int(round(float(row["time"]) * fps)),
                     original_time=float(row["original_time"]),
+                    label=str(row["label"]),
                     is_flagged=row["is_flagged"].lower() == "true",
                     is_discarded=row["is_discarded"].lower() == "true",
                 )

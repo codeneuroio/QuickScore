@@ -14,6 +14,7 @@ from PyQt5.QtWidgets import (
 from app.models import EventModel, TimeSeriesModel, VideoModel
 from app.state import StateManager
 from app.views import EventView, FileView, PlaybackView, TimeSeriesView, VideoView
+from app.views.label_view import CustomMessageBox
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -57,6 +58,7 @@ class MainWindow(QMainWindow):
         self.event_view = EventView(self.state_manager, self.event_model)
         self.timeseries_view = TimeSeriesView(self.state_manager, self.timeseries_model)
         self.playback_view = PlaybackView(self.state_manager)
+        self.label_view = CustomMessageBox()
 
     def _setup_ui(self) -> None:
         logging.info("Setting up UI")
@@ -141,6 +143,13 @@ class MainWindow(QMainWindow):
         self.event_model.decrement_event()
         self.start_timer()
 
+    def show_label_dialog(self):
+        if self.state_manager.get_state().event.current_event:
+            response = self.label_view.exec_()
+            if response:
+                label = self.label_view.parse_label()
+                self.event_model.label_event(label)
+
     def _setup_hotkeys(self) -> None:
         self.hotkeys = {
             Qt.Key_1: self.file_view.select_video,
@@ -155,6 +164,7 @@ class MainWindow(QMainWindow):
             Qt.Key_Space: self.start_timer,
             Qt.Key_F: self.event_model.flag_event,
             Qt.Key_D: self.event_model.discard_event,
+            Qt.Key_Shift: self.show_label_dialog,
         }
 
     def start_timer(self) -> None:

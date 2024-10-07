@@ -7,5 +7,6 @@ class Event:
     frame: int
     time: float
     original_time: float
+    label: str = ""
     is_discarded: bool = False
     is_flagged: bool = False
