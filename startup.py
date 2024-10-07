@@ -13,7 +13,14 @@ from PyQt5.QtWidgets import (
 )
 from app.models import EventModel, TimeSeriesModel, VideoModel
 from app.state import StateManager
-from app.views import EventView, FileView, PlaybackView, TimeSeriesView, VideoView, LabelView
+from app.views import (
+    EventView,
+    FileView,
+    LabelView,
+    PlaybackView,
+    TimeSeriesView,
+    VideoView,
+)
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"

@@ -129,9 +129,7 @@ class EventModel(QObject):
 
     def label_event(self, label: str):
         current_event = self.event_state.current_event
-        updated_event = replace(
-            current_event, label=label
-        )
+        updated_event = replace(current_event, label=label)
         self.events[updated_event.idx] = updated_event
         self._update_event_state(updated_event)
 

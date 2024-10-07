@@ -1,6 +1,13 @@
 from PyQt5.QtCore import QStringListModel, Qt
 from PyQt5.QtGui import QKeyEvent
-from PyQt5.QtWidgets import QPushButton, QVBoxLayout, QLineEdit, QCompleter, QHBoxLayout, QDialog
+from PyQt5.QtWidgets import (
+    QCompleter,
+    QDialog,
+    QHBoxLayout,
+    QLineEdit,
+    QPushButton,
+    QVBoxLayout,
+)
 
 
 class CustomLineEdit(QLineEdit):
@@ -39,7 +46,16 @@ class CustomLineEdit(QLineEdit):
 class LabelView(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.suggestions = ["arm", "hand", "fingers", "leg", "foot", "toes", "head", "neck"]
+        self.suggestions = [
+            "arm",
+            "hand",
+            "fingers",
+            "leg",
+            "foot",
+            "toes",
+            "head",
+            "neck",
+        ]
 
         # Components
         self.rocker = QPushButton("R")
@@ -65,7 +81,7 @@ class LabelView(QDialog):
         layout.addWidget(self.confirm_button)
 
         self.setLayout(layout)
-        self.setWindowTitle('Custom Message Box')
+        self.setWindowTitle("Custom Message Box")
         self.setFixedSize(300, 150)
 
         # Signals
@@ -96,6 +112,6 @@ class LabelView(QDialog):
     def parse_label(self):
         side = "L" if self.rocker.isChecked() else "R"
         label = self.text_edit.text().lower()
-        clean_label = '_'.join(label.lower().split()) or ''
+        clean_label = "_".join(label.lower().split()) or ""
 
         return f"{side}_{clean_label}"
