@@ -156,20 +156,6 @@ class MainWindow(QMainWindow):
         self.playback_view.set_playback_rate(self.playback_rate)
 
     def keyPressEvent(self, event):
-        # TODO remove mock data
-        if event.key() == Qt.Key_1:
-            self.video_model.load_video(
-                "/Users/Ryan/Downloads/EPT001_N1_1_intensity_low.mp4"
-            )
-            return
-        if event.key() == Qt.Key_2:
-            self.event_model.load_events("/Users/Ryan/Downloads/EPT_events.csv")
-            return
-        if event.key() == Qt.Key_3:
-            self.timeseries_model.load_timeseries("/Users/Ryan/Downloads/EPT_ts.csv")
-            return
-        # END TODO
-
         if not self.state_manager.get_state().playback.is_playing:
             key = event.key()
             if key in self.hotkeys:
