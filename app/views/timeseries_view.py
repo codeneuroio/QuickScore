@@ -3,6 +3,7 @@ import pyqtgraph as pg
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtWidgets import QVBoxLayout, QWidget
 from pyqtgraph import GraphicsLayoutWidget
+from state import TimeSeriesState
 from utils.schema import Event
 
 
@@ -14,6 +15,7 @@ class TimeSeriesView(QWidget):
         super().__init__(parent)
         self._state_manager = state_manager
         self._timeseries_model = timeseries_model
+        self._timeseries_selected_notified = False
         self.timeseries_line = None
         self.vline = None
         self.tmp_vline = None
@@ -60,7 +62,15 @@ class TimeSeriesView(QWidget):
         self.vline.sigPositionChangeFinished.connect(self.update_vline)
         self.sweep_timer.timeout.connect(self.update_sweep_vline)
 
+    @property
+    def timeseries_state(self) -> TimeSeriesState:
+        return self._state_manager.get_state().timeseries
+
     def _on_state_changed(self, state):
+        if self.timeseries_state.path and not self._timeseries_selected_notified:
+            self._timeseries_selected_notified = True
+            self._timeseries_model.load_timeseries()
+
         if state.timeseries.loaded:
             current_event = state.event.current_event
 

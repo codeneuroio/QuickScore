@@ -130,7 +130,6 @@ class MainWindow(QMainWindow):
             Qt.Key_Space: self.start_timer,
             Qt.Key_F: self.event_model.flag_event,
             Qt.Key_D: self.event_model.discard_event,
-            Qt.Key_S: self.event_model.save_events_to_csv,
         }
 
     def start_timer(self):

@@ -21,7 +21,8 @@ class EventModel(QObject):
     def event_state(self) -> EventState:
         return self._state_manager.get_state().event
 
-    def load_events(self, path: str):
+    def load_events(self):
+        path = self.event_state.path
         fps = self._state_manager.get_state().video.fps
 
         try:
@@ -46,7 +47,7 @@ class EventModel(QObject):
     def _update_event_state(self, event: Event):
         updated_state = replace(self.event_state, current_event=event)
         self._state_manager.update_state(event=updated_state)
-        self.save_events_to_csv()
+        self.save_events()
 
     def set_current_event(self, idx: int):
         next_event = self.events[idx]
@@ -93,7 +94,7 @@ class EventModel(QObject):
             updated_event = replace(current_event, idx=new_index)
             self._update_event_state(updated_event)
         else:
-            self.save_events_to_csv()
+            self.save_events()
 
         self.event_created.emit()
 
@@ -130,7 +131,7 @@ class EventModel(QObject):
         video_path = self._state_manager.get_state().video.path
         return os.path.splitext(video_path)[0] + "_qs.csv"
 
-    def save_events_to_csv(self) -> None:
+    def save_events(self) -> None:
         output_path = self.get_output_path()
         with open(output_path, "w", newline="") as csvfile:
             fieldnames = [
@@ -155,7 +156,7 @@ class EventModel(QObject):
 
                 writer.writerow(event_dict)
 
-    def load_events_from_csv(self):
+    def load_events_from_internal_file(self):
         file_path = self.get_output_path()
         with open(file_path, "r", newline="") as csvfile:
             reader = csv.DictReader(csvfile)

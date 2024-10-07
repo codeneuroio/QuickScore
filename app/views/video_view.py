@@ -11,6 +11,7 @@ class VideoView(QWidget):
         super().__init__(parent)
         self._state_manager = state_manager
         self._video_model = video_model
+        self._video_selected_notified = False
         self.max_height = None
 
         # Components
@@ -31,6 +32,10 @@ class VideoView(QWidget):
         return self._state_manager.get_state().video
 
     def _on_state_changed(self, state):
+        if not self._video_selected_notified:
+            self._video_selected_notified = True
+            self._video_model.load_video()
+
         if state.video.loaded:
             self._resize_video()
 

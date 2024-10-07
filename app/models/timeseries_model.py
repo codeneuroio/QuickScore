@@ -13,7 +13,8 @@ class TimeSeriesModel(QObject):
     def timeseries_state(self) -> TimeSeriesState:
         return self.state_manager.get_state().timeseries
 
-    def load_timeseries(self, path):
+    def load_timeseries(self):
+        path = self.timeseries_state.path
         try:
             with open(path, "r", encoding="utf-8-sig") as f:
                 data = np.genfromtxt(f, dtype=float, delimiter=",")

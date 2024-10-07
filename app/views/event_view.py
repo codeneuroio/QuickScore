@@ -16,6 +16,7 @@ class EventView(QWidget):
         super().__init__(parent)
         self._state_manager = state_manager
         self._event_model = event_model
+        self._events_selected_notified = False
         self._events_loaded_notified = False
 
         # Components
@@ -52,6 +53,10 @@ class EventView(QWidget):
         return self._state_manager.get_state().event
 
     def _on_state_changed(self, state):
+        if self.event_state.path and not self._events_loaded_notified:
+            self._events_loaded_notified = True
+            self._event_model.load_events()
+
         if state.playback.files_loaded:
             self.event_slider.setEnabled(True)
 
@@ -100,4 +105,4 @@ class EventView(QWidget):
             response = self.load_dialog.exec_()
 
             if response == 0:
-                self._event_model.load_events_from_csv()
+                self._event_model.load_events_from_internal_file()

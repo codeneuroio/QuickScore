@@ -16,7 +16,8 @@ class VideoModel(QObject):
     def video_state(self) -> VideoState:
         return self._state_manager.get_state().video
 
-    def load_video(self, path):
+    def load_video(self):
+        path = self.video_state.path
         try:
             self.video_object = cv2.VideoCapture(path)
             width = int(self.video_object.get(cv2.CAP_PROP_FRAME_WIDTH))
