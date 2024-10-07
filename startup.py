@@ -2,7 +2,6 @@ import logging
 import sys
 from dataclasses import replace
 from typing import Any, Dict
-from app.models import EventModel, TimeSeriesModel, VideoModel
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QKeyEvent, QMouseEvent
 from PyQt5.QtWidgets import (
@@ -12,6 +11,7 @@ from PyQt5.QtWidgets import (
     QMainWindow,
     QWidget,
 )
+from app.models import EventModel, TimeSeriesModel, VideoModel
 from app.state import StateManager
 from app.views import EventView, FileView, PlaybackView, TimeSeriesView, VideoView
 
