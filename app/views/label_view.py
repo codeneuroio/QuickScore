@@ -72,8 +72,6 @@ class LabelView(QDialog):
         self.rocker.clicked.connect(self.toggle_rocker)
         self.confirm_button.clicked.connect(self.accept)
 
-        self.initUI()
-
     def toggle_rocker(self):
         self.rocker.setChecked(not self.rocker.isChecked())
         if self.rocker.isChecked():

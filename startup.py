@@ -13,8 +13,7 @@ from PyQt5.QtWidgets import (
 )
 from app.models import EventModel, TimeSeriesModel, VideoModel
 from app.state import StateManager
-from app.views import EventView, FileView, PlaybackView, TimeSeriesView, VideoView
-from app.views.label_view import CustomMessageBox
+from app.views import EventView, FileView, PlaybackView, TimeSeriesView, VideoView, LabelView
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -58,7 +57,7 @@ class MainWindow(QMainWindow):
         self.event_view = EventView(self.state_manager, self.event_model)
         self.timeseries_view = TimeSeriesView(self.state_manager, self.timeseries_model)
         self.playback_view = PlaybackView(self.state_manager)
-        self.label_view = CustomMessageBox()
+        self.label_view = LabelView()
 
     def _setup_ui(self) -> None:
         logging.info("Setting up UI")
