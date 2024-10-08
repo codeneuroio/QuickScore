@@ -31,7 +31,7 @@ class EventState:
 class TimeSeriesState:
     loaded: bool = False
     path: str = ""
-    data: np.ndarray = np.array([])
+    data: np.ndarray = field(default_factory=lambda: np.array([]))
 
 
 @dataclass
