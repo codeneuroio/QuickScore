@@ -5,6 +5,8 @@
 # QuickScore
 Lightning-fast behavioral scoring tool.
 
+<img src="assets/screenshot.jpeg" alt="interface" width=600 />
+
 ## About
 Scoring behavior is time-consuming. Verifying pre-identified behavior is much faster.
 
