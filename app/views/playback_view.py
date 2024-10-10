@@ -46,13 +46,10 @@ class PlaybackView(QWidget):
         self._state_manager.state_changed.connect(self._on_state_changed)
 
     def _on_state_changed(self, state):
-        print("state changed")
         if state.playback.files_loaded:
             self.enable_buttons()
 
             current_event = state.event.events[state.event.current_event_idx] if state.event.events else None
-
-            print("pbv: ", current_event)
             if current_event and current_event.is_discarded:
                 self.disable_buttons()
 
