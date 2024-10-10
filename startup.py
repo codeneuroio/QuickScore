@@ -111,9 +111,6 @@ class MainWindow(QMainWindow):
         # Video
         self.video_view.video_resized.connect(self.resize_window)
 
-        # Events
-        self.event_model.event_created.connect(self.event_view.update_view)
-
         # TimeSeries
         self.timeseries_view.vline_updated.connect(self.event_model.update_event_time)
         self.timeseries_view.tmp_vline_created.connect(self.event_model.create_event)
@@ -142,15 +139,21 @@ class MainWindow(QMainWindow):
         )
 
     def handle_next(self) -> None:
-        self.event_model.increment_event()
-        self.start_timer()
+        current_event_idx = self.state_manager.get_state().event.current_event_idx
+        n_events = self.event_model.get_n_events()
+        if current_event_idx < n_events - 1:
+            self.event_model.increment_event()
+            self.start_timer()
 
     def handle_prev(self) -> None:
-        self.event_model.decrement_event()
-        self.start_timer()
+        current_event_idx = self.state_manager.get_state().event.current_event_idx
+        if current_event_idx > 0:
+            self.event_model.decrement_event()
+            self.start_timer()
 
     def show_label_dialog(self):
-        if self.state_manager.get_state().event.current_event:
+        current_event = self.event_model.get_current_event()
+        if current_event:
             response = self.label_view.exec_()
             if response:
                 label = self.label_view.parse_label()
@@ -158,9 +161,9 @@ class MainWindow(QMainWindow):
 
     def _setup_hotkeys(self) -> None:
         self.hotkeys = {
-            Qt.Key_1: self.file_view.select_video,
-            Qt.Key_2: self.file_view.select_events,
-            Qt.Key_3: self.file_view.select_timeseries,
+            # Qt.Key_1: self.file_view.select_video,
+            # Qt.Key_2: self.file_view.select_events,
+            # Qt.Key_3: self.file_view.select_timeseries,
             Qt.Key_Left: self.handle_prev,
             Qt.Key_Right: self.handle_next,
             Qt.Key_Alt: self.timeseries_view.create_tmp_vline,
@@ -174,7 +177,8 @@ class MainWindow(QMainWindow):
         }
 
     def start_timer(self) -> None:
-        if not self.state_manager.get_state().event.current_event.is_discarded:
+        current_event = self.event_model.get_current_event()
+        if not current_event.is_discarded:
             msec = int(round(1000 / self.playback_rate))
             QTimer.singleShot(msec, Qt.PreciseTimer, self.stop_timer)
             playback_state = replace(
@@ -195,6 +199,22 @@ class MainWindow(QMainWindow):
         self.playback_view.set_playback_rate(self.playback_rate)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
+        if event.key() == Qt.Key_1:
+            video_state = replace(
+                self.state_manager.get_state().video, path="/Users/Ryan/Downloads/EPT001_N1_intensity_new.mp4"
+            )
+            self.state_manager.update_state(video=video_state)
+        elif event.key() == Qt.Key_2:
+            event_state = replace(
+                self.state_manager.get_state().event, path="/Users/Ryan/Downloads/events.csv"
+            )
+            self.state_manager.update_state(event=event_state)
+        elif event.key() == Qt.Key_3:
+            timeseries_state = replace(
+                self.state_manager.get_state().timeseries, path="/Users/Ryan/Downloads/ts.csv"
+            )
+            self.state_manager.update_state(timeseries=timeseries_state)
+
         if not self.state_manager.get_state().playback.is_playing:
             key = event.key()
             if key in self.hotkeys:

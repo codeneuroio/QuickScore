@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import QVBoxLayout, QWidget
 from pyqtgraph import GraphicsLayoutWidget
 from app.state import TimeSeriesState
 from app.utils.schema import Event
+from typing import List
 
 
 class TimeSeriesView(QWidget):
@@ -20,6 +21,7 @@ class TimeSeriesView(QWidget):
         self.vline = None
         self.tmp_vline = None
         self.sweep_vline = None
+        self.nearby_vlines = []
         self.sweep_timer = QTimer()
         self.sweep_timer.setTimerType(Qt.PreciseTimer)
         self.refresh_rate = 1.0
@@ -40,11 +42,12 @@ class TimeSeriesView(QWidget):
         self.plot_widget.setMouseEnabled(x=False, y=False)
         self.plot_widget.setMenuEnabled(False)
 
-        self.pen = pg.mkPen(color=(0, 0, 0), width=1)
-        self.pen_discarded = pg.mkPen(color=(200, 200, 200), width=1)
-        self.pen_center = pg.mkPen("k", width=1, style=Qt.DashLine)
-        self.pen_hover = pg.mkPen("b", width=1, style=Qt.DashLine)
-        self.pen_add = pg.mkPen("g", width=1, style=Qt.DashLine)
+        self.pen = pg.mkPen(color=(0, 0, 0), width=2)
+        self.pen_nearby = pg.mkPen(color=(150, 150, 150), width=1)
+        self.pen_discarded = pg.mkPen(color=(200, 200, 200), width=2)
+        self.pen_center = pg.mkPen("k", width=2, style=Qt.DashLine)
+        self.pen_hover = pg.mkPen("b", width=2, style=Qt.DashLine)
+        self.pen_add = pg.mkPen("g", width=2, style=Qt.DashLine)
         self.pen_sweep = pg.mkPen("r", width=2)
         self.pen_none = pg.mkPen(None)
 
@@ -72,9 +75,10 @@ class TimeSeriesView(QWidget):
             self._timeseries_model.load_timeseries()
 
         if state.timeseries.loaded:
-            current_event = state.event.current_event
+            events = state.event.events
+            current_event = events[state.event.current_event_idx]
 
-            self.update_plot(state.timeseries.data, current_event, state.video.fps)
+            self.update_plot(state.timeseries.data, current_event, events, state.video.fps)
 
             if state.playback.is_playing:
                 self.vline.setMovable(False)
@@ -101,12 +105,15 @@ class TimeSeriesView(QWidget):
             x=-0.5, y=0, pen=self.pen_sweep, movable=False, bounds=[-0.5, 0.5]
         )
 
-    def update_plot(self, data: np.ndarray, event: Event, fps: int):
+    def update_plot(self, data: np.ndarray, event: Event, events: List[Event], fps: float):
         if self.timeseries_line:
             self.timeseries_line.clear()
 
+        for vline in self.nearby_vlines:
+            self.plot_widget.removeItem(vline)
+
         # Calculate indices
-        half_window = int(fps / 2)
+        half_window = int(round(fps / 2))
         start = max(0, event.frame - half_window)
         stop = min(len(data), event.frame + half_window)
 
@@ -117,10 +124,33 @@ class TimeSeriesView(QWidget):
         y = np.pad(y, (left_pad, right_pad), mode="constant", constant_values=np.nan)
         x = np.linspace(-0.5, 0.5, len(y))
 
-        # Plot
+        # Plot nearby events
+        nearby = self.find_nearby_events(current_event=event, events=events)
+        for t in nearby:
+            vline = self.plot_widget.addLine(
+                x=t,
+                y=0,
+                pen=self.pen_discarded,
+                movable=False,
+                bounds=[-0.5, 0.5],
+            )
+            self.nearby_vlines.append(vline)
+
+        # Plot timeseries
         pen = self.pen_discarded if event.is_discarded else self.pen
         self.timeseries_line = self.plot_widget.plot(x, y, pen=pen)
         self.plot_widget.setYRange(np.nanmin(y), np.nanmax(y))
+
+    @staticmethod
+    def find_nearby_events(current_event: Event, events: List[Event]) -> List[float]:
+        nearby = []
+        for event in events:
+            d_time = event.time - current_event.time
+            is_not_current_event = event.idx != current_event.idx
+            is_in_range = abs(d_time) < 0.5
+            if is_not_current_event and is_in_range:
+                nearby.append(d_time)
+        return nearby
 
     def update_vline(self):
         self.vline_updated.emit(self.vline.x())

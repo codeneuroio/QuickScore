@@ -9,13 +9,9 @@ from app.utils.schema import Event
 
 
 class EventModel(QObject):
-    event_created = pyqtSignal()
-
     def __init__(self, state_manager):
         super().__init__()
         self._state_manager = state_manager
-        self.events: List[Event] = []
-        self.n_events: int = 0
 
     @property
     def event_state(self) -> EventState:
@@ -28,14 +24,13 @@ class EventModel(QObject):
         try:
             with open(path, "r", encoding="utf-8-sig") as f:
                 raw_events = np.genfromtxt(f, dtype=float, delimiter=",")
-                self.events = [
+                events = [
                     Event(idx=i, frame=int(t * fps), time=t, original_time=t)
                     for i, t in enumerate(raw_events)
                 ]
-                self.n_events = len(self.events)
 
             self._state_manager.update_state(
-                event=EventState(loaded=True, path=path, current_event=self.events[0])
+                event=EventState(loaded=True, path=path, events=events, current_event_idx=0)
             )
             return True
         except Exception as e:
@@ -44,100 +39,125 @@ class EventModel(QObject):
             self._state_manager.update_state(event=state)
             return False
 
-    def _update_event_state(self, event: Event):
-        updated_state = replace(self.event_state, current_event=event)
+    def get_events(self):
+        return self.event_state.events.copy()
+
+    def get_current_event(self):
+        idx = self.event_state.current_event_idx
+        return self.event_state.events[idx]
+
+    def get_n_events(self):
+        return len(self.event_state.events)
+
+    def _set_events(self, events: List[Event]):
+        updated_state = replace(self.event_state, events=events)
         self._state_manager.update_state(event=updated_state)
         self.save_events()
 
-    def set_current_event(self, idx: int):
-        next_event = self.events[idx]
-        self._update_event_state(next_event)
+    def _set_current_event_idx(self, idx: int):
+        updated_state = replace(self.event_state, current_event_idx=idx)
+        self._state_manager.update_state(event=updated_state)
+        self.save_events()
+
+    def set_current_event_idx(self, idx: int):
+        self._set_current_event_idx(idx)
 
     def increment_event(self):
-        current_event = self.event_state.current_event
-        if current_event.idx < self.n_events - 1:
-            next_event = self.events[current_event.idx + 1]
-            self._update_event_state(next_event)
+        idx = self.event_state.current_event_idx
+        if idx < self.get_n_events() - 1:
+            self._set_current_event_idx(idx + 1)
 
     def decrement_event(self):
-        current_event = self.event_state.current_event
-        if 0 < current_event.idx:
-            prev_event = self.events[current_event.idx - 1]
-            self._update_event_state(prev_event)
+        idx = self.event_state.current_event_idx
+        if 0 < idx:
+            self._set_current_event_idx(idx - 1)
 
     def create_event(self, time: float):
-        current_event = self.event_state.current_event
+        current_event = self.get_current_event()
+        idx = current_event.idx
         fps = self._state_manager.get_state().video.fps
 
         # Create new event
         new_time = current_event.time + time
-        new_index = current_event.idx + (1 if time >= 0 else 0)
+        new_idx = idx + (1 if time >= 0 else 0)
         if new_time < 0:
             print("Cannot create an event before time zero")
             return
 
         new_event = Event(
-            idx=new_index,
+            idx=new_idx,
             frame=int(round(new_time * fps)),
             time=new_time,
             original_time=np.nan,
         )
 
         # Update events list
-        self.events.insert(new_index, new_event)
-        self.n_events += 1
-        for i in range(new_index + 1, len(self.events)):
-            self.events[i].idx = i
+        events = self.get_events()
+        events.insert(new_idx, new_event)
+        for i in range(new_idx + 1, len(events)):
+            events[i].idx = i
 
-        # Update current event state
+        self._set_events(events)
+
+        # Update current event idx
         if time < 0:
-            updated_event = replace(current_event, idx=new_index)
-            self._update_event_state(updated_event)
+            self._set_current_event_idx(new_idx)
         else:
             self.save_events()
 
-        self.event_created.emit()
-
     def update_event_time(self, relative_time: float):
-        current_event = self.event_state.current_event
+        events = self.get_events()
+        current_event = self.get_current_event()
+        idx = current_event.idx
         fps = self._state_manager.get_state().video.fps
 
         new_time = current_event.time + relative_time
         new_frame = int(round(new_time * fps))
         if new_time >= 0:
             updated_event = replace(current_event, time=new_time, frame=new_frame)
-            self.events[current_event.idx] = updated_event
-            self._update_event_state(updated_event)
+            events[idx] = updated_event
+            self._set_events(events)
         else:
             print("Cannot move an event before time zero.")
 
     def flag_event(self):
-        current_event = self.event_state.current_event
+        events = self.get_events()
+        current_event = self.get_current_event()
+        idx = current_event.idx
+
         updated_event = replace(
             current_event, is_flagged=(not current_event.is_flagged)
         )
-        self.events[updated_event.idx] = updated_event
-        self._update_event_state(updated_event)
+        events[idx] = updated_event
+        self._set_events(events)
 
     def discard_event(self):
-        current_event = self.event_state.current_event
+        events = self.get_events()
+        current_event = self.get_current_event()
+        idx = current_event.idx
+
         updated_event = replace(
             current_event, is_discarded=(not current_event.is_discarded)
         )
-        self.events[updated_event.idx] = updated_event
-        self._update_event_state(updated_event)
+        events[idx] = updated_event
+        self._set_events(events)
 
     def label_event(self, label: str):
-        current_event = self.event_state.current_event
+        events = self.get_events()
+        current_event = self.get_current_event()
+        idx = current_event.idx
+
         updated_event = replace(current_event, label=label)
-        self.events[updated_event.idx] = updated_event
-        self._update_event_state(updated_event)
+        events[idx] = updated_event
+        self._set_events(events)
 
     def get_output_path(self):
         video_path = self._state_manager.get_state().video.path
         return os.path.splitext(video_path)[0] + "_qs.csv"
 
     def save_events(self) -> None:
+        events = self.get_events()
+        idx = self.event_state.current_event_idx
         output_path = self.get_output_path()
         with open(output_path, "w", newline="") as csvfile:
             fieldnames = [
@@ -152,10 +172,9 @@ class EventModel(QObject):
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
 
-            current_event = self.event_state.current_event
-            for event in self.events:
+            for event in events:
                 event_dict = asdict(event)
-                event_dict["is_current"] = event.idx == current_event.idx
+                event_dict["is_current"] = event.idx == idx
                 event_dict["id"] = event_dict.pop("idx")
 
                 # Remove any keys not in fieldnames
@@ -186,8 +205,8 @@ class EventModel(QObject):
                 if row["is_current"].lower() == "true":
                     current_event_idx = event.idx
 
-        self.events = new_events
+        self._set_events(new_events)
         if current_event_idx is not None:
-            self.set_current_event(current_event_idx)
+            self._set_current_event_idx(current_event_idx)
         elif new_events:
-            self._update_event_state(new_events[0])
+            self._set_current_event_idx(0)

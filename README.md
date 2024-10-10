@@ -55,6 +55,10 @@ Simply move the center line in the timeseries graph to adjust the timing of the 
 If you see an event that is not in your original CSV, but you want to add it to the data, hold down `Alt` and move 
 the center line on the TimeSeries graph to the desired position.
 
+### Label an event
+Click `Shift` to open the label editor. Use `tab` to toggle left/right, and type the label. The autosuggestions can 
+be changed [here](app/views/label_view.py#L49). Click `Enter` to save the label.
+
 ### Save Results
 Saving is performed automatically with every operation.
 
@@ -81,6 +85,11 @@ Slash: 0.25x Speed
 # Events
 F: Flag event
 D: Discard event
+
+# Labels
+Shift: Open label editor
+Tab: Toggle L/R prefix
+Enter: Save label and close editor
 ```
 
 ## License
