@@ -72,7 +72,7 @@ class TimeSeriesView(QWidget):
             self._timeseries_model.load_timeseries()
 
         if state.timeseries.loaded:
-            current_event = state.event.current_event
+            current_event = state.event.events[state.event.current_event_idx] if state.event.events else None
 
             self.update_plot(state.timeseries.data, current_event, state.video.fps)
 
@@ -101,12 +101,12 @@ class TimeSeriesView(QWidget):
             x=-0.5, y=0, pen=self.pen_sweep, movable=False, bounds=[-0.5, 0.5]
         )
 
-    def update_plot(self, data: np.ndarray, event: Event, fps: int):
+    def update_plot(self, data: np.ndarray, event: Event, fps: float):
         if self.timeseries_line:
             self.timeseries_line.clear()
 
         # Calculate indices
-        half_window = int(fps / 2)
+        half_window = int(round(fps / 2))
         start = max(0, event.frame - half_window)
         stop = min(len(data), event.frame + half_window)
 

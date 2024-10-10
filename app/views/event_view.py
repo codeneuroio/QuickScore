@@ -21,7 +21,7 @@ class EventView(QWidget):
 
         # Components
         self.event_label = QLabel()
-        self.set_event_label(0, 0)
+        self.set_event_label(0, self._event_model.get_n_events())
         self.event_slider = QSlider(QtCore.Qt.Horizontal)
         self.event_slider.setFixedWidth(600)
         self.event_slider.setSingleStep(1)
@@ -32,7 +32,9 @@ class EventView(QWidget):
         self.load_dialog = QMessageBox()
         self.load_dialog.setText("An existing output file was found. Continue scoring?")
         self.continue_button = QPushButton("Continue")
+        self.continue_button.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.overwrite_button = QPushButton("Overwrite file")
+        self.overwrite_button.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.load_dialog.addButton(self.continue_button, QMessageBox.YesRole)
         self.load_dialog.addButton(self.overwrite_button, QMessageBox.NoRole)
         self.load_dialog.setDefaultButton(self.continue_button)
@@ -74,10 +76,10 @@ class EventView(QWidget):
 
     def _update_view(self, event_state: EventState):
         self.set_event_label(
-            event_state.current_event.idx, self._event_model.n_events - 1
+            event_state.current_event_idx, self._event_model.get_n_events() - 1
         )
-        self.set_event_slider_position(event_state.current_event.idx)
-        self.set_event_slider_range(self._event_model.n_events - 1)
+        self.set_event_slider_position(event_state.current_event_idx)
+        self.set_event_slider_range(self._event_model.get_n_events() - 1)
 
     def update_view(self):
         event_state = self._state_manager.get_state().event
@@ -93,11 +95,11 @@ class EventView(QWidget):
         self.event_slider.setRange(0, maximum)
 
     def _on_slider_moved(self, value: int):
-        self.set_event_label(value, self._event_model.n_events - 1)
+        self.set_event_label(value, self._event_model.get_n_events() - 1)
 
     def _on_slider_released(self):
-        value = self.event_slider.value()
-        self._event_model.set_current_event(value)
+        idx = self.event_slider.value()
+        self._event_model.set_current_event_idx(idx)
 
     def _load_dialog(self):
         output_path = self._event_model.get_output_path()

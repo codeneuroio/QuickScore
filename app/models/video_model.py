@@ -23,9 +23,6 @@ class VideoModel(QObject):
             width = int(self.video_object.get(cv2.CAP_PROP_FRAME_WIDTH))
             height = int(self.video_object.get(cv2.CAP_PROP_FRAME_HEIGHT))
             fps = self.video_object.get(cv2.CAP_PROP_FPS)
-            if not fps.is_integer():
-                raise ArithmeticError("FPS is not an integer.")
-            fps = int(fps)
 
             self.set_media(path)
             self._state_manager.update_state(
@@ -50,7 +47,8 @@ class VideoModel(QObject):
         self._media_player.setVideoOutput(video)
 
     def handle_play(self):
-        current_event = self._state_manager.get_state().event.current_event
+        current_event_idx = self._state_manager.get_state().event.current_event_idx
+        current_event = self._state_manager.get_state().event.events[current_event_idx]
         pos = int(round(1000 * (current_event.time - 0.5)))
         self.set_position(pos)
         self.play()

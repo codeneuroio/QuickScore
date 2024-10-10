@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, List
 import numpy as np
 from app.utils.schema import Event
 
@@ -24,7 +24,8 @@ class VideoState:
 class EventState:
     loaded: bool = False
     path: str = ""
-    current_event: Optional[Event] = None
+    events: List[Event] = field(default_factory=list)
+    current_event_idx: int = 0
 
 
 @dataclass
