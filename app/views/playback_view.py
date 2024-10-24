@@ -49,7 +49,11 @@ class PlaybackView(QWidget):
         if state.playback.files_loaded:
             self.enable_buttons()
 
-            current_event = state.event.events[state.event.current_event_idx] if state.event.events else None
+            current_event = (
+                state.event.events[state.event.current_event_idx]
+                if state.event.events
+                else None
+            )
             if current_event and current_event.is_discarded:
                 self.disable_buttons()
 

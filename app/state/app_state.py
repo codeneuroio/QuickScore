@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, List
+from typing import List
 import numpy as np
 from app.utils.schema import Event
 

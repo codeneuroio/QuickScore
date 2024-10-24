@@ -161,9 +161,9 @@ class MainWindow(QMainWindow):
 
     def _setup_hotkeys(self) -> None:
         self.hotkeys = {
-            # Qt.Key_1: self.file_view.select_video,
-            # Qt.Key_2: self.file_view.select_events,
-            # Qt.Key_3: self.file_view.select_timeseries,
+            Qt.Key_1: self.file_view.select_video,
+            Qt.Key_2: self.file_view.select_events,
+            Qt.Key_3: self.file_view.select_timeseries,
             Qt.Key_Left: self.handle_prev,
             Qt.Key_Right: self.handle_next,
             Qt.Key_Alt: self.timeseries_view.create_tmp_vline,
@@ -199,21 +199,21 @@ class MainWindow(QMainWindow):
         self.playback_view.set_playback_rate(self.playback_rate)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
-        if event.key() == Qt.Key_1:
-            video_state = replace(
-                self.state_manager.get_state().video, path="/Users/Ryan/Downloads/EPT001_N1_intensity_new.mp4"
-            )
-            self.state_manager.update_state(video=video_state)
-        elif event.key() == Qt.Key_2:
-            event_state = replace(
-                self.state_manager.get_state().event, path="/Users/Ryan/Downloads/events.csv"
-            )
-            self.state_manager.update_state(event=event_state)
-        elif event.key() == Qt.Key_3:
-            timeseries_state = replace(
-                self.state_manager.get_state().timeseries, path="/Users/Ryan/Downloads/ts.csv"
-            )
-            self.state_manager.update_state(timeseries=timeseries_state)
+        # if event.key() == Qt.Key_1:
+        #     video_state = replace(
+        #         self.state_manager.get_state().video, path="/Users/Ryan/Downloads/EPT001_N1_intensity_new.mp4"
+        #     )
+        #     self.state_manager.update_state(video=video_state)
+        # elif event.key() == Qt.Key_2:
+        #     event_state = replace(
+        #         self.state_manager.get_state().event, path="/Users/Ryan/Downloads/events.csv"
+        #     )
+        #     self.state_manager.update_state(event=event_state)
+        # elif event.key() == Qt.Key_3:
+        #     timeseries_state = replace(
+        #         self.state_manager.get_state().timeseries, path="/Users/Ryan/Downloads/ts.csv"
+        #     )
+        #     self.state_manager.update_state(timeseries=timeseries_state)
 
         if not self.state_manager.get_state().playback.is_playing:
             key = event.key()

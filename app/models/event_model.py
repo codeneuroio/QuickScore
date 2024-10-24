@@ -3,7 +3,7 @@ import os
 from dataclasses import asdict, replace
 from typing import List, Optional
 import numpy as np
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject
 from app.state.app_state import EventState
 from app.utils.schema import Event
 
@@ -30,7 +30,9 @@ class EventModel(QObject):
                 ]
 
             self._state_manager.update_state(
-                event=EventState(loaded=True, path=path, events=events, current_event_idx=0)
+                event=EventState(
+                    loaded=True, path=path, events=events, current_event_idx=0
+                )
             )
             return True
         except Exception as e:

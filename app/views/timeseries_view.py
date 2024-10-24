@@ -1,3 +1,4 @@
+from typing import List
 import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
@@ -5,7 +6,6 @@ from PyQt5.QtWidgets import QVBoxLayout, QWidget
 from pyqtgraph import GraphicsLayoutWidget
 from app.state import TimeSeriesState
 from app.utils.schema import Event
-from typing import List
 
 
 class TimeSeriesView(QWidget):
@@ -78,7 +78,9 @@ class TimeSeriesView(QWidget):
             events = state.event.events
             current_event = events[state.event.current_event_idx]
 
-            self.update_plot(state.timeseries.data, current_event, events, state.video.fps)
+            self.update_plot(
+                state.timeseries.data, current_event, events, state.video.fps
+            )
 
             if state.playback.is_playing:
                 self.vline.setMovable(False)
@@ -105,7 +107,9 @@ class TimeSeriesView(QWidget):
             x=-0.5, y=0, pen=self.pen_sweep, movable=False, bounds=[-0.5, 0.5]
         )
 
-    def update_plot(self, data: np.ndarray, event: Event, events: List[Event], fps: float):
+    def update_plot(
+        self, data: np.ndarray, event: Event, events: List[Event], fps: float
+    ):
         if self.timeseries_line:
             self.timeseries_line.clear()
 
